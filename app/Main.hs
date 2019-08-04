@@ -1,7 +1,7 @@
 module Main where
 
 import qualified Data.List as List
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, listToMaybe, mapMaybe)
 import qualified Data.Set  as Set
 
 import Lib
@@ -126,25 +126,18 @@ dpll :: CNF -> Maybe CNF
 dpll cnf
   | isConsistentSetOfLiterals cnf = Just cnf
   | hasEmptyClauses           cnf = Nothing
-  | otherwise                     = evalBranch dpll (updateDpll cnf)
-
-evalBranch :: (a -> Maybe a) -> Maybe (a, a)  -> Maybe a
-evalBranch f (Just (a, b)) = case f a of
-  Just a' -> Just a'
-  Nothing -> case f b of
-    Just b' -> Just b'
-    Nothing -> Nothing
-evalBranch f Nothing = Nothing
+  | otherwise                     = listToMaybe . mapMaybe dpll $ (updateDpll cnf)
 
 addLiteral :: Lit -> CNF -> CNF
 addLiteral lit (CNF clauses) = CNF $ (Disj [lit]):clauses
 
-updateDpll :: CNF -> Maybe (CNF, CNF)
-updateDpll cnf = case chooseLiteral updatedCnf of
-  Just lit -> Just (addLiteral lit cnf, addLiteral (invLit lit) cnf)
-  Nothing  -> Nothing
-  where
-    updatedCnf = eliminateAllPureLiterals . unitPropagateAll $ cnf
+makeBranches :: CNF -> [CNF]
+makeBranches cnf = case chooseLiteral cnf of
+  Just lit -> [addLiteral lit cnf, addLiteral (invLit lit) cnf]
+  Nothing  -> []
+
+updateDpll :: CNF -> [CNF]
+updateDpll = makeBranches . eliminateAllPureLiterals . unitPropagateAll
 
 main :: IO ()
 main = someFunc
