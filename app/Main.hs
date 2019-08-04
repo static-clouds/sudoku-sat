@@ -1,7 +1,7 @@
 module Main where
 
 import qualified Data.List as List
-import Data.Maybe (catMaybes, listToMaybe, mapMaybe)
+import Data.Maybe (catMaybes, isJust, listToMaybe, mapMaybe)
 import qualified Data.Set  as Set
 
 import Lib
@@ -40,19 +40,17 @@ isEmpty :: Clause -> Bool
 isEmpty (Disj []) = True
 isEmpty _         = False
 
-isLiteral :: Clause -> Bool
-isLiteral (Disj [lit]) = True
-isLiteral _            = False
-
-splitAtoms :: [Lit] -> ([Lit], [Lit])
-splitAtoms = List.partition isPos 
+extractUnitLiteral :: Clause -> Maybe Lit
+extractUnitLiteral (Disj [lit]) = Just lit
+extractUnitLiteral _            = Nothing
 
 isConsistentSetOfLiterals :: CNF -> Bool
-isConsistentSetOfLiterals (CNF clauses) = isAllLiterals && isConsistent
+isConsistentSetOfLiterals (CNF clauses) = isAllUnitLiterals && isConsistent
   where
-    isAllLiterals = all isLiteral clauses
-    literals = map (\(Disj lits) -> head lits) clauses
-    isConsistent = Set.null $ (posAtoms literals) `Set.intersection` (negAtoms literals)
+    extractedUnitLiterals = map extractUnitLiteral clauses
+    isAllUnitLiterals = all isJust extractedUnitLiterals
+    unitLiterals = catMaybes extractedUnitLiterals
+    isConsistent = Set.null $ (posAtoms unitLiterals) `Set.intersection` (negAtoms unitLiterals)
 
 hasEmptyClauses :: CNF -> Bool
 hasEmptyClauses (CNF clauses) = any isEmpty clauses
