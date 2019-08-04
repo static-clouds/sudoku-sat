@@ -93,23 +93,55 @@ allPureLiterals cnf = purePosLiterals `Set.union` pureNegLiterals
     negAtoms = Set.map (\(Neg a) -> a) negAtoms'
     (posAtoms', negAtoms') = Set.partition isPos $ allLiterals cnf
 
+eliminateAllPureLiterals :: CNF -> CNF
+eliminateAllPureLiterals cnf = Set.fold eliminateLiteral cnf (allPureLiterals cnf)
+
 allUnitLiterals :: CNF -> Set.Set Lit
 allUnitLiterals (CNF clauses) = Set.fromList $ map extractLiteral $ filter isLiteral clauses
   where extractLiteral (Disj [a]) = a
 
-unitPropagateAll :: Set.Set Lit -> CNF -> CNF
-unitPropagateAll propagatedLits cnf
-  | allLiterals' == propagatedLits = cnf
-  | otherwise                      = unitPropagateAll (Set.insert nextLiteral propagatedLits) (unitPropagate' nextLiteral cnf)
+allUnitLiteralsPropagated :: (Set.Set Lit, CNF) -> Bool
+allUnitLiteralsPropagated (propagated, cnf) = (allUnitLiterals cnf) == propagated
+
+propagateUnitLiterals :: (Set.Set Lit, CNF) -> (Set.Set Lit, CNF)
+propagateUnitLiterals (propagated, cnf) = (Set.insert nextLiteral propagated, unitPropagate' nextLiteral cnf)
   where
     allLiterals' = allUnitLiterals cnf
-    unusedLiterals = allLiterals' `Set.difference` propagatedLits
+    unusedLiterals = allLiterals' `Set.difference` propagated
     nextLiteral = Set.elemAt 0 unusedLiterals
 
+unitPropagateAll :: CNF -> CNF
+unitPropagateAll cnf = snd $ until allUnitLiteralsPropagated propagateUnitLiterals (Set.empty, cnf)
+
+headMaybe :: [a] -> Maybe a
+headMaybe (x:xs) = Just x
+headMaybe _      = Nothing
+
 chooseLiteral :: CNF -> Maybe Lit
-chooseLiteral cnf = fmap fst $ List.uncons $ Set.toList lits
+chooseLiteral cnf = headMaybe $ Set.toList lits
   where
     lits = allLiterals cnf `Set.difference` allUnitLiterals cnf
+
+dpll :: CNF -> (Bool, CNF)
+dpll cnf
+  | isConsistentSetOfLiterals cnf = (True, cnf)
+  | hasEmptyClauses           cnf = (False, cnf)
+  | otherwise                     = updateDpll cnf
+
+addLiteral :: Lit -> CNF -> CNF
+addLiteral lit (CNF clauses) = CNF $ (Disj [lit]):clauses
+
+branch :: (Bool, a) -> (Bool, a) -> (Bool, a)
+branch (False, _) (True, b) = (True , b)
+branch (True, a ) _         = (True , a)
+branch (False, a) _         = (False, a)
+
+updateDpll :: CNF -> (Bool, CNF)
+updateDpll cnf = case chooseLiteral updatedCnf of
+  Just lit -> branch (dpll $ addLiteral lit cnf) (dpll $ addLiteral (invLit lit) cnf)
+  Nothing -> (False, updatedCnf)
+  where
+    updatedCnf = eliminateAllPureLiterals . unitPropagateAll $ cnf
 
 main :: IO ()
 main = someFunc
