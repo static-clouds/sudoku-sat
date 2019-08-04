@@ -51,11 +51,8 @@ isConsistentSetOfLiterals :: CNF -> Bool
 isConsistentSetOfLiterals (CNF clauses) = isAllLiterals && isConsistent
   where
     isAllLiterals = all isLiteral clauses
-    literals = Set.fromList $ map (\(Disj lits) -> head lits) clauses
-    posAtoms = Set.map (\(Pos a) -> a) posLits
-    negAtoms = Set.map (\(Neg a) -> a) negLits
-    (posLits, negLits) = Set.partition isPos literals
-    isConsistent = Set.null $ posAtoms `Set.intersection` negAtoms
+    literals = map (\(Disj lits) -> head lits) clauses
+    isConsistent = Set.null $ (posAtoms literals) `Set.intersection` (negAtoms literals)
 
 hasEmptyClauses :: CNF -> Bool
 hasEmptyClauses (CNF clauses) = any isEmpty clauses
@@ -81,17 +78,28 @@ eliminateLiteralFromClause lit (Disj xs) = Disj ns
 eliminateLiteral :: Lit -> CNF -> CNF
 eliminateLiteral lit (CNF clauses) = CNF $ map (eliminateLiteralFromClause lit) clauses
 
-allLiterals :: CNF -> Set.Set Lit
-allLiterals (CNF clauses) = Set.fromList $ List.concatMap (\(Disj xs) -> xs) $ clauses
+allLiterals :: CNF -> [Lit]
+allLiterals (CNF clauses) = List.concatMap (\(Disj xs) -> xs) $ clauses
+
+posAtoms :: [Lit] -> Set.Set Atom
+posAtoms = Set.fromList . (mapMaybe extractPos)
+  where
+    extractPos (Pos a) = Just a
+    extractPos _       = Nothing
+
+negAtoms :: [Lit] -> Set.Set Atom
+negAtoms = Set.fromList . (mapMaybe extractNeg)
+  where
+    extractNeg (Neg a) = Just a
+    extractNeg _       = Nothing
 
 allPureLiterals :: CNF -> Set.Set Lit
 allPureLiterals cnf = purePosLiterals `Set.union` pureNegLiterals
   where
-    purePosLiterals = Set.map Pos $ posAtoms `Set.difference` negAtoms
-    pureNegLiterals = Set.map Neg $ negAtoms `Set.difference` posAtoms
-    posAtoms = Set.map (\(Pos a) -> a) posAtoms'
-    negAtoms = Set.map (\(Neg a) -> a) negAtoms'
-    (posAtoms', negAtoms') = Set.partition isPos $ allLiterals cnf
+    purePosLiterals = Set.map Pos $ posAtoms' `Set.difference` negAtoms'
+    pureNegLiterals = Set.map Neg $ negAtoms' `Set.difference` posAtoms'
+    posAtoms' = posAtoms $ allLiterals cnf
+    negAtoms' = negAtoms $ allLiterals cnf
 
 eliminateAllPureLiterals :: CNF -> CNF
 eliminateAllPureLiterals cnf = Set.fold eliminateLiteral cnf (allPureLiterals cnf)
