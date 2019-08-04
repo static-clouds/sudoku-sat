@@ -123,20 +123,20 @@ propagateUnitLiterals (propagated, cnf) = (Set.insert nextLiteral propagated, un
 unitPropagateAll :: CNF -> CNF
 unitPropagateAll cnf = snd $ until allUnitLiteralsPropagated propagateUnitLiterals (Set.empty, cnf)
 
-headMaybe :: [a] -> Maybe a
-headMaybe (x:xs) = Just x
-headMaybe _      = Nothing
+takeOne :: Set.Set a -> Maybe a
+takeOne s
+  | Set.size s > 0 = Just $ Set.elemAt 0 s
+  | otherwise      = Nothing
 
 chooseLiteral :: CNF -> Maybe Lit
-chooseLiteral cnf = headMaybe $ Set.toList lits
-  where
-    lits = allLiterals cnf `Set.difference` allUnitLiterals cnf
+chooseLiteral cnf = takeOne $ (Set.fromList $ allLiterals cnf) `Set.difference` allUnitLiterals cnf
 
 dpll :: CNF -> Maybe CNF
 dpll cnf
   | isConsistentSetOfLiterals cnf = Just cnf
   | hasEmptyClauses           cnf = Nothing
-  | otherwise                     = listToMaybe . mapMaybe dpll $ (updateDpll cnf)
+  | otherwise                     = listToMaybe . mapMaybe dpll $ branches
+  where branches = makeBranches $ eliminateAllPureLiterals $ unitPropagateAll cnf
 
 addLiteral :: Lit -> CNF -> CNF
 addLiteral lit (CNF clauses) = CNF $ (Disj [lit]):clauses
@@ -145,9 +145,6 @@ makeBranches :: CNF -> [CNF]
 makeBranches cnf = case chooseLiteral cnf of
   Just lit -> [addLiteral lit cnf, addLiteral (invLit lit) cnf]
   Nothing  -> []
-
-updateDpll :: CNF -> [CNF]
-updateDpll = makeBranches . eliminateAllPureLiterals . unitPropagateAll
 
 main :: IO ()
 main = someFunc
