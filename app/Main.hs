@@ -51,10 +51,10 @@ isConsistentSetOfLiterals :: CNF -> Bool
 isConsistentSetOfLiterals (CNF clauses) = isAllLiterals && isConsistent
   where
     isAllLiterals = all isLiteral clauses
-    literals = map (\(Disj lits) -> head lits) clauses
-    (posLits, negLits) = List.partition isPos literals
-    posAtoms = Set.fromList $ map (\(Pos a) -> a) posLits
-    negAtoms = Set.fromList $ map (\(Neg a) -> a) negLits
+    literals = Set.fromList $ map (\(Disj lits) -> head lits) clauses
+    posAtoms = Set.map (\(Pos a) -> a) posLits
+    negAtoms = Set.map (\(Neg a) -> a) negLits
+    (posLits, negLits) = Set.partition isPos literals
     isConsistent = Set.null $ posAtoms `Set.intersection` negAtoms
 
 hasEmptyClauses :: CNF -> Bool
@@ -106,6 +106,10 @@ unitPropagateAll propagatedLits cnf
     unusedLiterals = allLiterals' `Set.difference` propagatedLits
     nextLiteral = Set.elemAt 0 unusedLiterals
 
+chooseLiteral :: CNF -> Maybe Lit
+chooseLiteral cnf = fmap fst $ List.uncons $ Set.toList lits
+  where
+    lits = allLiterals cnf `Set.difference` allUnitLiterals cnf
 
 main :: IO ()
 main = someFunc
