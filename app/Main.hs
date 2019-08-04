@@ -32,6 +32,10 @@ isNeg :: Lit -> Bool
 isNeg (Pos _) = False
 isNeg (Neg _) = True
 
+isEmpty :: Clause -> Bool
+isEmpty (Disj []) = True
+isEmpty _         = False
+
 isLiteral :: Clause -> Bool
 isLiteral (Disj [lit]) = True
 isLiteral _            = False
@@ -49,7 +53,8 @@ isConsistentSetOfLiterals (CNF clauses) = isAllLiterals && isConsistent
     negAtoms = Set.fromList $ map (\(Neg a) -> a) negLits
     isConsistent = Set.null $ posAtoms `Set.intersection` negAtoms
 
-
+hasEmptyClauses :: CNF -> Bool
+hasEmptyClauses (CNF clauses) = any isEmpty clauses
 
 main :: IO ()
 main = someFunc
