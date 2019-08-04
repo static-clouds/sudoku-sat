@@ -9,7 +9,7 @@ data Atom = A String deriving (Eq, Ord)
 instance Show Atom where
   show (A s) = s
 
-data Lit = Pos Atom | Neg Atom deriving Eq
+data Lit = Pos Atom | Neg Atom deriving (Eq, Ord)
 instance Show Lit where
   show (Pos a) = show a
   show (Neg a) = "¬" ++ show a
@@ -29,8 +29,11 @@ isPos (Pos _) = True
 isPos (Neg _) = False
 
 isNeg :: Lit -> Bool
-isNeg (Pos _) = False
-isNeg (Neg _) = True
+isNeg = isPos . invLit
+
+invLit :: Lit -> Lit
+invLit (Pos a) = Neg a
+invLit (Neg a) = Pos a
 
 isEmpty :: Clause -> Bool
 isEmpty (Disj []) = True
@@ -55,6 +58,34 @@ isConsistentSetOfLiterals (CNF clauses) = isAllLiterals && isConsistent
 
 hasEmptyClauses :: CNF -> Bool
 hasEmptyClauses (CNF clauses) = any isEmpty clauses
+
+unitPropagate :: Lit -> Clause -> Clause
+unitPropagate a (Disj xs) = Disj ns
+  where
+    ns
+      | xs == [a]    = xs
+      | a  `elem` xs = []
+      | a' `elem` xs = List.delete a' xs
+      | otherwise    = xs
+    a' = invLit a
+
+unitPropagate' :: Lit -> CNF -> CNF
+unitPropagate' a (CNF clauses) = CNF $ map (unitPropagate a) clauses
+
+
+allLiterals :: CNF -> Set.Set Lit
+allLiterals (CNF clauses) = Set.fromList $ map extractLiteral $ filter isLiteral clauses
+  where extractLiteral (Disj [a]) = a
+
+unitPropagateAll :: Set.Set Lit -> CNF -> CNF
+unitPropagateAll propagatedLits cnf
+  | allLiterals' == propagatedLits = cnf
+  | otherwise                      = unitPropagateAll (Set.insert nextLiteral propagatedLits) (unitPropagate' nextLiteral cnf)
+  where
+    allLiterals' = allLiterals cnf
+    unusedLiterals = allLiterals' `Set.difference` propagatedLits
+    nextLiteral = Set.elemAt 0 unusedLiterals
+
 
 main :: IO ()
 main = someFunc
