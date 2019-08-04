@@ -18,7 +18,9 @@ unitPropagate' a (CNF clauses) = CNF $ catMaybes $ map (unitPropagate a) clauses
 
 
 allUnitLiteralsPropagated :: (Set.Set Lit, CNF) -> Bool
-allUnitLiteralsPropagated (propagated, cnf) = (allUnitLiterals cnf) == propagated
+allUnitLiteralsPropagated (propagated, cnf) = Set.null unusedLiterals
+  where
+    unusedLiterals = (allUnitLiterals cnf) `Set.difference` propagated
 
 propagateUnitLiterals :: (Set.Set Lit, CNF) -> (Set.Set Lit, CNF)
 propagateUnitLiterals (propagated, cnf) = (Set.insert nextLiteral propagated, unitPropagate' nextLiteral cnf)
