@@ -97,8 +97,10 @@ eliminateAllPureLiterals :: CNF -> CNF
 eliminateAllPureLiterals cnf = Set.fold eliminateLiteral cnf (allPureLiterals cnf)
 
 allUnitLiterals :: CNF -> Set.Set Lit
-allUnitLiterals (CNF clauses) = Set.fromList $ map extractLiteral $ filter isLiteral clauses
-  where extractLiteral (Disj [a]) = a
+allUnitLiterals (CNF clauses) = Set.fromList $ mapMaybe extractUnitLiteral clauses
+  where
+    extractUnitLiteral (Disj [a]) = Just a
+    extractUnitLiteral _          = Nothing
 
 allUnitLiteralsPropagated :: (Set.Set Lit, CNF) -> Bool
 allUnitLiteralsPropagated (propagated, cnf) = (allUnitLiterals cnf) == propagated
