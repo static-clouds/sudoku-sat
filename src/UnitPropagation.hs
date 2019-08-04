@@ -8,13 +8,13 @@ import CNF
 unitPropagate :: Lit -> Clause -> Maybe Clause
 unitPropagate lit (Disj xs)
       | lit  `elem` xs = Nothing
-      | xs == [lit]    = Just $ Disj xs
-      | lit' `elem` xs = Just $ Disj $ List.delete lit' xs
+      | Set.null xs    = Just $ Disj xs
+      | lit' `elem` xs = Just $ Disj $ Set.delete lit' xs
       | otherwise      = Just $ Disj xs
   where lit' = invLit lit
 
 unitPropagate' :: Lit -> CNF -> CNF
-unitPropagate' a (CNF clauses) = CNF $ catMaybes $ map (unitPropagate a) clauses
+unitPropagate' a (CNF clauses) = CNF $ mapMaybe (unitPropagate a) clauses
 
 
 allUnitLiteralsPropagated :: (Set.Set Lit, CNF) -> Bool

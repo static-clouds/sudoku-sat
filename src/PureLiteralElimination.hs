@@ -5,12 +5,12 @@ import qualified Data.Set as Set
 
 import CNF (CNF(..), Clause(..), Lit(..), allLiterals, posAtoms, negAtoms)
 
-updateLiterals :: ([Lit] -> [Lit]) -> Clause -> Clause
+updateLiterals :: (Set.Set Lit -> Set.Set Lit) -> Clause -> Clause
 updateLiterals f (Disj lits) = Disj (f lits)
 
 eliminateLiteral :: Lit -> CNF -> CNF
-eliminateLiteral lit (CNF clauses) = CNF $ map updateClause clauses
-  where updateClause = updateLiterals $ List.delete lit
+eliminateLiteral lit (CNF clauses) = CNF $ Set.map updateClause clauses
+  where updateClause = updateLiterals $ Set.delete lit
 
 allPureLiterals :: CNF -> Set.Set Lit
 allPureLiterals cnf = purePosLiterals `Set.union` pureNegLiterals
