@@ -1,29 +1,43 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module Main where
 
 import qualified Data.List as List
 import Data.Maybe (catMaybes, isJust, listToMaybe, mapMaybe)
 import qualified Data.Set  as Set
+import GHC.Generics
+import Generic.Random
+import Test.QuickCheck
 
 import Lib
 
-data Atom = A String deriving (Eq, Ord)
+data Atom = A String deriving (Eq, Ord, Generic)
 instance Show Atom where
   show (A s) = s
+instance Arbitrary Atom where
+  arbitrary = genericArbitraryU
 
-data Lit = Pos Atom | Neg Atom deriving (Eq, Ord)
+data Lit = Pos Atom | Neg Atom deriving (Eq, Ord, Generic)
 instance Show Lit where
   show (Pos a) = show a
   show (Neg a) = "¬" ++ show a
+instance Arbitrary Lit where
+  arbitrary = genericArbitraryU
 
-data Clause = Disj [Lit] deriving Eq
+data Clause = Disj [Lit] deriving (Eq, Generic)
 instance Show Clause where
   show (Disj []) = "∅"
   show (Disj xs) = "(" ++ (List.intercalate " ∨ " $ map show xs) ++ ")"
-  
-data CNF = CNF [Clause] deriving Eq
+instance Arbitrary Clause where
+  arbitrary = genericArbitraryU
+
+data CNF = CNF [Clause] deriving (Eq, Generic)
 instance Show CNF where
   show (CNF [])  = "{}"
   show (CNF xs)  = List.intercalate " ∧ " $ map show xs
+instance Arbitrary CNF where
+  arbitrary = genericArbitraryU
+
 
 isPos :: Lit -> Bool
 isPos (Pos _) = True
