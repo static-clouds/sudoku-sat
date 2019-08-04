@@ -60,21 +60,42 @@ hasEmptyClauses :: CNF -> Bool
 hasEmptyClauses (CNF clauses) = any isEmpty clauses
 
 unitPropagate :: Lit -> Clause -> Clause
-unitPropagate a (Disj xs) = Disj ns
+unitPropagate lit (Disj xs) = Disj ns
   where
     ns
-      | xs == [a]    = xs
-      | a  `elem` xs = []
-      | a' `elem` xs = List.delete a' xs
-      | otherwise    = xs
-    a' = invLit a
+      | xs == [lit]    = xs
+      | lit  `elem` xs = []
+      | lit' `elem` xs = List.delete lit' xs
+      | otherwise      = xs
+    lit' = invLit lit
 
 unitPropagate' :: Lit -> CNF -> CNF
 unitPropagate' a (CNF clauses) = CNF $ map (unitPropagate a) clauses
 
+eliminateLiteralFromClause :: Lit -> Clause -> Clause
+eliminateLiteralFromClause lit (Disj xs) = Disj ns
+  where
+    ns
+      | lit `elem` xs = List.delete lit xs
+      | otherwise     = xs
+
+eliminateLiteral :: Lit -> CNF -> CNF
+eliminateLiteral lit (CNF clauses) = CNF $ map (eliminateLiteralFromClause lit) clauses
 
 allLiterals :: CNF -> Set.Set Lit
-allLiterals (CNF clauses) = Set.fromList $ map extractLiteral $ filter isLiteral clauses
+allLiterals (CNF clauses) = Set.fromList $ List.concatMap (\(Disj xs) -> xs) $ clauses
+
+allPureLiterals :: CNF -> Set.Set Lit
+allPureLiterals cnf = purePosLiterals `Set.union` pureNegLiterals
+  where
+    purePosLiterals = Set.map Pos $ posAtoms `Set.difference` negAtoms
+    pureNegLiterals = Set.map Neg $ negAtoms `Set.difference` posAtoms
+    posAtoms = Set.map (\(Pos a) -> a) posAtoms'
+    negAtoms = Set.map (\(Neg a) -> a) negAtoms'
+    (posAtoms', negAtoms') = Set.partition isPos $ allLiterals cnf
+
+allUnitLiterals :: CNF -> Set.Set Lit
+allUnitLiterals (CNF clauses) = Set.fromList $ map extractLiteral $ filter isLiteral clauses
   where extractLiteral (Disj [a]) = a
 
 unitPropagateAll :: Set.Set Lit -> CNF -> CNF
@@ -82,7 +103,7 @@ unitPropagateAll propagatedLits cnf
   | allLiterals' == propagatedLits = cnf
   | otherwise                      = unitPropagateAll (Set.insert nextLiteral propagatedLits) (unitPropagate' nextLiteral cnf)
   where
-    allLiterals' = allLiterals cnf
+    allLiterals' = allUnitLiterals cnf
     unusedLiterals = allLiterals' `Set.difference` propagatedLits
     nextLiteral = Set.elemAt 0 unusedLiterals
 
