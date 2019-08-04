@@ -1,6 +1,7 @@
 module Main where
 
 import qualified Data.List as List
+import Data.Maybe (catMaybes)
 import qualified Data.Set  as Set
 
 import Lib
@@ -59,18 +60,16 @@ isConsistentSetOfLiterals (CNF clauses) = isAllLiterals && isConsistent
 hasEmptyClauses :: CNF -> Bool
 hasEmptyClauses (CNF clauses) = any isEmpty clauses
 
-unitPropagate :: Lit -> Clause -> Clause
-unitPropagate lit (Disj xs) = Disj ns
-  where
-    ns
-      | xs == [lit]    = xs
-      | lit  `elem` xs = []
-      | lit' `elem` xs = List.delete lit' xs
-      | otherwise      = xs
-    lit' = invLit lit
+unitPropagate :: Lit -> Clause -> Maybe Clause
+unitPropagate lit (Disj xs)
+      | lit  `elem` xs = Nothing
+      | xs == [lit]    = Just $ Disj xs
+      | lit' `elem` xs = Just $ Disj $ List.delete lit' xs
+      | otherwise      = Just $ Disj xs
+  where lit' = invLit lit
 
 unitPropagate' :: Lit -> CNF -> CNF
-unitPropagate' a (CNF clauses) = CNF $ map (unitPropagate a) clauses
+unitPropagate' a (CNF clauses) = CNF $ catMaybes $ map (unitPropagate a) clauses
 
 eliminateLiteralFromClause :: Lit -> Clause -> Clause
 eliminateLiteralFromClause lit (Disj xs) = Disj ns
