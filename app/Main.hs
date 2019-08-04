@@ -122,24 +122,27 @@ chooseLiteral cnf = headMaybe $ Set.toList lits
   where
     lits = allLiterals cnf `Set.difference` allUnitLiterals cnf
 
-dpll :: CNF -> (Bool, CNF)
+dpll :: CNF -> Maybe CNF
 dpll cnf
-  | isConsistentSetOfLiterals cnf = (True, cnf)
-  | hasEmptyClauses           cnf = (False, cnf)
-  | otherwise                     = updateDpll cnf
+  | isConsistentSetOfLiterals cnf = Just cnf
+  | hasEmptyClauses           cnf = Nothing
+  | otherwise                     = evalBranch dpll (updateDpll cnf)
+
+evalBranch :: (a -> Maybe a) -> Maybe (a, a)  -> Maybe a
+evalBranch f (Just (a, b)) = case f a of
+  Just a' -> Just a'
+  Nothing -> case f b of
+    Just b' -> Just b'
+    Nothing -> Nothing
+evalBranch f Nothing = Nothing
 
 addLiteral :: Lit -> CNF -> CNF
 addLiteral lit (CNF clauses) = CNF $ (Disj [lit]):clauses
 
-branch :: (Bool, a) -> (Bool, a) -> (Bool, a)
-branch (False, _) (True, b) = (True , b)
-branch (True, a ) _         = (True , a)
-branch (False, a) _         = (False, a)
-
-updateDpll :: CNF -> (Bool, CNF)
+updateDpll :: CNF -> Maybe (CNF, CNF)
 updateDpll cnf = case chooseLiteral updatedCnf of
-  Just lit -> branch (dpll $ addLiteral lit cnf) (dpll $ addLiteral (invLit lit) cnf)
-  Nothing -> (False, updatedCnf)
+  Just lit -> Just (addLiteral lit cnf, addLiteral (invLit lit) cnf)
+  Nothing  -> Nothing
   where
     updatedCnf = eliminateAllPureLiterals . unitPropagateAll $ cnf
 
