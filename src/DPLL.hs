@@ -7,6 +7,8 @@ import CNF (CNF(..), Clause(..), Lit, invLit, posAtoms, negAtoms, isEmpty, extra
 import PureLiteralElimination (eliminateAllPureLiterals)
 import UnitPropagation (unitPropagateAll)
 
+import Debug.Trace (trace)
+
 isConsistentSetOfLiterals :: CNF -> Bool
 isConsistentSetOfLiterals (CNF clauses) = isAllUnitLiterals && isConsistent unitLiterals
   where
@@ -26,17 +28,23 @@ takeOne s
 chooseLiteral :: CNF -> Maybe Lit
 chooseLiteral cnf = takeOne $ allLiterals cnf `Set.difference` allUnitLiterals cnf
 
-makeBranches :: CNF -> [CNF]
-makeBranches cnf = case chooseLiteral cnf of
-  Just lit -> [addUnitClause lit cnf, addUnitClause (invLit lit) cnf]
-  Nothing  -> []
+makeBranches :: Lit -> CNF -> [CNF]
+makeBranches lit cnf = map (flip addUnitClause $ cnf) [lit, invLit lit]
+
+seqMaybe :: [Maybe a] -> Maybe a
+seqMaybe []            = Nothing
+seqMaybe (Nothing:xs)  = seqMaybe xs
+seqMaybe ((Just a):xs) = Just a
 
 dpll :: CNF -> Maybe CNF
 dpll cnf
   | isConsistentSetOfLiterals cnf = Just cnf
   | hasEmptyClauses           cnf = Nothing
-  | otherwise                     = listToMaybe . mapMaybe dpll $ branches
-  where branches = makeBranches $ dpllStep cnf
+  | otherwise                     = case (chooseLiteral cnf') of
+      Just newLiteral -> seqMaybe $ map dpll $ makeBranches newLiteral cnf'
+      Nothing         -> dpll cnf'
+  where cnf' = dpllStep cnf
+
 
 dpllStep :: CNF -> CNF
 dpllStep = eliminateAllPureLiterals . unitPropagateAll
