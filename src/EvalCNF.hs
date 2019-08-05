@@ -25,17 +25,20 @@ disjunctionIsTrue atomMapping (Disj lits') = any evaluate $ zip lits values
   where
     lits = Set.toList lits'
     atoms = map unwrapLit lits
-    values = map (fromJust . flip Map.lookup atomMapping) $ atoms
+    values = map (\atom -> Map.findWithDefault False atom atomMapping) $ atoms
     evaluate ((Pos _), True ) = True
     evaluate ((Neg _), False) = True
     evaluate _                = False
 
 isValidClause :: AtomMapping -> Clause -> Bool
-isValidClause atomMapping clause = coveredByMapping atomMapping clause && disjunctionIsTrue atomMapping clause
+isValidClause atomMapping clause = disjunctionIsTrue atomMapping clause
+
+makeAtomMapping :: Set.Set Lit -> AtomMapping
+makeAtomMapping literals = Map.mapKeys unwrapLit $ Map.fromSet truthValue literals
 
 isValidCNF :: CNF -> Bool
 isValidCNF cnf@(CNF clauses) = all (isValidClause atomMapping) disjunctions
   where
-    atomMapping = Map.mapKeys unwrapLit $ Map.fromSet truthValue literals
+    atomMapping = makeAtomMapping literals
     literals = allUnitLiterals cnf
     disjunctions = allDisjunctions cnf
