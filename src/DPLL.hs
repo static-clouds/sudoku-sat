@@ -9,14 +9,14 @@ import UnitPropagation (unitPropagateAll)
 
 import Debug.Trace (trace)
 
-isConsistentSetOfLiterals :: CNF -> Bool
+isConsistentSetOfLiterals :: (Ord a) => CNF a -> Bool
 isConsistentSetOfLiterals (CNF clauses) = isAllUnitLiterals && isConsistent unitLiterals
   where
     extractedUnitLiterals = Set.map extractUnitLiteral clauses
     isAllUnitLiterals = all isJust extractedUnitLiterals
     unitLiterals = Set.map fromJust extractedUnitLiterals
 
-hasEmptyClauses :: CNF -> Bool
+hasEmptyClauses :: (Ord a) => CNF a -> Bool
 hasEmptyClauses (CNF clauses) = any isEmpty clauses
 
 
@@ -25,10 +25,10 @@ takeOne s
   | Set.size s > 0 = Just $ Set.elemAt 0 s
   | otherwise      = Nothing
 
-chooseLiteral :: CNF -> Maybe Lit
+chooseLiteral :: (Ord a) => CNF a -> Maybe (Lit a)
 chooseLiteral cnf = takeOne $ allLiterals cnf `Set.difference` allUnitLiterals cnf
 
-makeBranches :: Lit -> CNF -> [CNF]
+makeBranches :: (Ord a) => Lit a -> CNF a -> [CNF a]
 makeBranches lit cnf = map (flip addUnitClause $ cnf) [lit, invLit lit]
 
 seqMaybe :: [Maybe a] -> Maybe a
@@ -36,7 +36,7 @@ seqMaybe []            = Nothing
 seqMaybe (Nothing:xs)  = seqMaybe xs
 seqMaybe ((Just a):xs) = Just a
 
-dpll :: CNF -> Maybe CNF
+dpll :: (Ord a) => CNF a -> Maybe (CNF a)
 dpll cnf
   | isConsistentSetOfLiterals cnf = Just cnf
   | hasEmptyClauses           cnf = Nothing
@@ -46,5 +46,5 @@ dpll cnf
   where cnf' = dpllStep cnf
 
 
-dpllStep :: CNF -> CNF
+dpllStep :: (Ord a) => CNF a -> CNF a
 dpllStep = eliminateAllPureLiterals . unitPropagateAll

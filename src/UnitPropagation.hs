@@ -5,29 +5,29 @@ import Data.Maybe (catMaybes)
 import qualified Data.Set as Set
 import CNF
 
-unitPropagate :: Lit -> Clause -> Maybe Clause
+unitPropagate :: (Ord a) => Lit a -> Clause a -> Maybe (Clause a)
 unitPropagate lit (Disj xs)
       | lit  `elem` xs = Nothing
       | lit' `elem` xs = Just $ Disj $ Set.delete lit' xs
       | otherwise      = Just $ Disj xs
   where lit' = invLit lit
 
-unitPropagate' :: Lit -> CNF -> CNF
+unitPropagate' :: (Ord a) => Lit a -> CNF a -> CNF a
 unitPropagate' a (CNF clauses) = CNF $ mapMaybe (unitPropagate a) clauses
 
 
-allUnitLiteralsPropagated :: (Set.Set Lit, CNF) -> Bool
+allUnitLiteralsPropagated :: (Ord a) => (Set.Set (Lit a), CNF a) -> Bool
 allUnitLiteralsPropagated (propagated, cnf) = Set.null $ allUnitLiterals cnf
 
-propagateUnitLiterals :: (Set.Set Lit, CNF) -> (Set.Set Lit, CNF)
+propagateUnitLiterals :: (Ord a) => (Set.Set (Lit a), CNF a) -> (Set.Set (Lit a), CNF a)
 propagateUnitLiterals (propagated, cnf) = (Set.insert nextLiteral propagated, unitPropagate' nextLiteral cnf)
   where
     nextLiteral = Set.elemAt 0 $ allUnitLiterals cnf
 
-makeUnitLiteral :: Lit -> Clause
+makeUnitLiteral :: (Ord a) => Lit a -> Clause a
 makeUnitLiteral lit = Disj $ Set.singleton lit
 
-unitPropagateAll :: CNF -> CNF
+unitPropagateAll :: (Ord a) => CNF a -> CNF a
 unitPropagateAll cnf = CNF $ Set.union updatedClauses propagatedClauses
   where
     -- Propagate the unit literals through the CNF expression

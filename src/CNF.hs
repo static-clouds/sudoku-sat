@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
 module CNF where
 
 import qualified Data.List as List
@@ -7,28 +8,26 @@ import GHC.Generics
 import Generic.Random
 import Test.QuickCheck
 
-data Atom = A String deriving (Eq, Ord, Generic)
-instance Show Atom where
-  show (A s) = s
-instance Arbitrary Atom where
-  arbitrary = do
-    s <- elements ["a", "b", "c", "d", "e", "f", "g"]
-    pure $ A s
-
-data Lit = Pos Atom | Neg Atom deriving (Eq, Ord, Generic)
-instance Show Lit where
-  show (Pos a) = show a
-  show (Neg a) = "¬" ++ show a
-instance Arbitrary Lit where
+data Atom a = A a deriving (Eq, Ord, Generic)
+instance (Show a) => Show (Atom a) where
+  show (A s) = show s
+instance (Arbitrary a) => Arbitrary (Atom a) where
   arbitrary = genericArbitraryU
 
-data Clause = Disj (Set.Set Lit) deriving (Eq, Generic, Ord)
-instance Show Clause where
+data Lit a = Pos (Atom a) | Neg (Atom a) deriving (Eq, Ord, Generic)
+instance (Show a) => Show (Lit a) where
+  show (Pos a) = show a
+  show (Neg a) = "¬" ++ show a
+instance (Arbitrary a) => Arbitrary (Lit a) where
+  arbitrary = genericArbitraryU
+
+data Clause a = Disj (Set.Set (Lit a)) deriving (Eq, Generic, Ord)
+instance (Show a) => Show (Clause a) where
   show (Disj literals)
     | Set.null literals = "∅"
     | otherwise        = "(" ++ (List.intercalate " ∨ " $ showItems) ++ ")"
       where showItems = Set.toList $ Set.map show literals
-instance Arbitrary Clause where
+instance (Arbitrary a, Ord a) => Arbitrary (Clause a) where
   arbitrary = Disj <$> do
     -- for all a, don't generate a disjunction containing both a and ¬a
     lits <- suchThat' largeEnough $ suchThat' isConsistent $ arbitrary
@@ -38,23 +37,23 @@ instance Arbitrary Clause where
 
       largeEnough lits = (Set.size lits) `elem` [1, 2, 3]
 
-data CNF = CNF (Set.Set Clause) deriving (Eq, Generic)
-instance Show CNF where
+data CNF a = CNF (Set.Set (Clause a)) deriving (Eq, Generic)
+instance (Show a) => Show (CNF a) where
   show (CNF clauses)
     | Set.null clauses = "{}"
     | otherwise        = List.intercalate " ∧ " showItems
       where showItems = Set.toList $ Set.map show clauses
-instance Arbitrary CNF where
+instance (Arbitrary a, Ord a) => Arbitrary (CNF a) where
   arbitrary = genericArbitraryU
 
-invLit :: Lit -> Lit
+invLit :: Lit a -> Lit a
 invLit (Pos a) = Neg a
 invLit (Neg a) = Pos a
 
-isEmpty :: Clause -> Bool
+isEmpty :: Clause a -> Bool
 isEmpty (Disj literals) = Set.null literals
 
-allLiterals :: CNF -> Set.Set Lit
+allLiterals :: (Ord a) => CNF a -> Set.Set (Lit a)
 allLiterals (CNF clauses) = Set.unions $ Set.map (\(Disj xs) -> xs) clauses
 
 mapMaybe :: (Ord b) => (a -> Maybe b) -> Set.Set a -> Set.Set b
@@ -63,47 +62,49 @@ mapMaybe f values = foldMap resultToSet values
                               Just result -> Set.singleton result
                               Nothing     -> Set.empty
 
-posAtoms :: Set.Set Lit -> Set.Set Atom
+posAtoms :: (Ord a) => Set.Set (Lit a) -> Set.Set (Atom a)
 posAtoms = mapMaybe extractPos
   where
     extractPos (Pos a) = Just a
     extractPos _       = Nothing
 
-negAtoms :: Set.Set Lit -> Set.Set Atom
+negAtoms :: (Ord a) => Set.Set (Lit a) -> Set.Set (Atom a)
 negAtoms = mapMaybe extractNeg
   where
     extractNeg (Neg a) = Just a
     extractNeg _       = Nothing
 
-extractUnitLiteral :: Clause -> Maybe Lit
+extractUnitLiteral :: Clause a -> Maybe (Lit a)
 extractUnitLiteral (Disj literals)
   | Set.size literals == 1 = Just $ Set.elemAt 0 literals
   | otherwise              = Nothing
 
-extractDisjunction :: Clause -> Maybe Clause
+extractDisjunction :: Clause a -> Maybe (Clause a)
 extractDisjunction (Disj literals)
   | Set.size literals > 1  = Just (Disj literals)
   | otherwise              = Nothing
 
-allUnitLiterals :: CNF -> Set.Set Lit
+allUnitLiterals :: (Ord a) => CNF a -> Set.Set (Lit a)
 allUnitLiterals (CNF clauses) = mapMaybe extractUnitLiteral clauses
 
-allDisjunctions :: CNF -> Set.Set Clause
+allDisjunctions :: (Ord a) => CNF a -> Set.Set (Clause a)
 allDisjunctions (CNF clauses) = mapMaybe extractDisjunction clauses
 
-addUnitClause :: Lit -> CNF -> CNF
+addUnitClause :: (Ord a) => Lit a -> CNF a -> CNF a
 addUnitClause lit (CNF clauses) = CNF $ Set.insert (Disj $ Set.singleton lit) clauses
 
-isConsistent :: Set.Set Lit -> Bool
+isConsistent :: (Ord a) => Set.Set (Lit a) -> Bool
 isConsistent literals = Set.null $ (posAtoms literals) `Set.intersection` (negAtoms literals)
 
 
 p = Pos . A
 n = Neg . A
 
+disj :: (Ord a) => [Lit a] -> Clause a
 disj = Disj . Set.fromList
+
+cnf :: (Ord a) => [Clause a] -> CNF a
 cnf  = CNF  . Set.fromList
 
-
-combine :: CNF -> CNF -> CNF
+combine :: (Ord a) => CNF a -> CNF a -> CNF a
 combine (CNF disjs) (CNF disjs') = CNF $ Set.union disjs disjs'
