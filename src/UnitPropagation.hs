@@ -17,15 +17,20 @@ unitPropagate' a (CNF clauses) = CNF $ mapMaybe (unitPropagate a) clauses
 
 
 allUnitLiteralsPropagated :: (Set.Set Lit, CNF) -> Bool
-allUnitLiteralsPropagated (propagated, cnf) = Set.null unusedLiterals
-  where
-    unusedLiterals = (allUnitLiterals cnf) `Set.difference` propagated
+allUnitLiteralsPropagated (propagated, cnf) = Set.null $ allUnitLiterals cnf
 
 propagateUnitLiterals :: (Set.Set Lit, CNF) -> (Set.Set Lit, CNF)
 propagateUnitLiterals (propagated, cnf) = (Set.insert nextLiteral propagated, unitPropagate' nextLiteral cnf)
   where
-    unusedLiterals = (allUnitLiterals cnf) `Set.difference` propagated
-    nextLiteral = Set.elemAt 0 unusedLiterals
+    nextLiteral = Set.elemAt 0 $ allUnitLiterals cnf
+
+makeUnitLiteral :: Lit -> Clause
+makeUnitLiteral lit = Disj $ Set.singleton lit
 
 unitPropagateAll :: CNF -> CNF
-unitPropagateAll cnf = snd $ until allUnitLiteralsPropagated propagateUnitLiterals (Set.empty, cnf)
+unitPropagateAll cnf = CNF $ Set.union updatedClauses propagatedClauses
+  where
+    -- Propagate the unit literals through the CNF expression
+    (propagated, (CNF updatedClauses)) = until allUnitLiteralsPropagated propagateUnitLiterals (Set.empty, cnf)
+    -- Add the propagated unit literals back into the CNF expression
+    propagatedClauses = Set.map makeUnitLiteral propagated
