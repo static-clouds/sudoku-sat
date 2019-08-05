@@ -8,7 +8,6 @@ import CNF
 unitPropagate :: Lit -> Clause -> Maybe Clause
 unitPropagate lit (Disj xs)
       | lit  `elem` xs = Nothing
-      | Set.null xs    = Just $ Disj xs
       | lit' `elem` xs = Just $ Disj $ Set.delete lit' xs
       | otherwise      = Just $ Disj xs
   where lit' = invLit lit
