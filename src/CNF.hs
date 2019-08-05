@@ -96,3 +96,14 @@ addUnitClause lit (CNF clauses) = CNF $ Set.insert (Disj $ Set.singleton lit) cl
 
 isConsistent :: Set.Set Lit -> Bool
 isConsistent literals = Set.null $ (posAtoms literals) `Set.intersection` (negAtoms literals)
+
+
+p = Pos . A
+n = Neg . A
+
+disj = Disj . Set.fromList
+cnf  = CNF  . Set.fromList
+
+
+combine :: CNF -> CNF -> CNF
+combine (CNF disjs) (CNF disjs') = CNF $ Set.union disjs disjs'
