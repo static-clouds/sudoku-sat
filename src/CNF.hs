@@ -35,8 +35,8 @@ instance Arbitrary Clause where
     return lits
     where
       suchThat' = flip suchThat
-      largeEnough lits = (Set.size lits) `elem` [1,2]
 
+      largeEnough lits = (Set.size lits) `elem` [1, 2, 3]
 
 data CNF = CNF (Set.Set Clause) deriving (Eq, Generic)
 instance Show CNF where
