@@ -16,10 +16,6 @@ unwrapLit :: Lit -> Atom
 unwrapLit (Pos a) = a
 unwrapLit (Neg a) = a
 
-coveredByMapping :: AtomMapping -> Clause -> Bool
-coveredByMapping atomMapping (Disj lits) = all isJust $ Set.map (flip Map.lookup atomMapping) atoms
-  where atoms = Set.map unwrapLit lits
-
 disjunctionIsTrue :: AtomMapping -> Clause -> Bool
 disjunctionIsTrue atomMapping (Disj lits') = any evaluate $ zip lits values
   where
