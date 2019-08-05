@@ -12,7 +12,7 @@ instance Show Atom where
   show (A s) = s
 instance Arbitrary Atom where
   arbitrary = do
-    s <- elements ["a", "b"]
+    s <- elements ["a", "b", "c", "d", "e", "f", "g"]
     pure $ A s
 
 data Lit = Pos Atom | Neg Atom deriving (Eq, Ord, Generic)
