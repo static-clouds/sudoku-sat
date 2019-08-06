@@ -42,6 +42,7 @@ dpll cnf
   | hasEmptyClauses           cnf = Nothing
   | otherwise                     = case (chooseLiteral cnf') of
       Just newLiteral -> seqMaybe $ map dpll $ makeBranches newLiteral cnf'
+      -- No more literals to add, call dpll one last time to check if a solution has been found
       Nothing         -> dpll cnf'
   where cnf' = dpllStep cnf
 

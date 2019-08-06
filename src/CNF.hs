@@ -42,33 +42,37 @@ instance (Show a) => Show (CNF a) where
   show (CNF clauses)
     | Set.null clauses = "{}"
     | otherwise        = List.intercalate " ∧ " showItems
-      where showItems = Set.toList $ Set.map show clauses
+      where showItems =  foldMap (\clause -> [show clause]) clauses
 instance (Arbitrary a, Ord a) => Arbitrary (CNF a) where
   arbitrary = genericArbitraryU
+instance (Ord a) => Semigroup (CNF a) where
+  (<>) (CNF clauses) (CNF clauses') = CNF $ clauses <> clauses'
+instance (Ord a) => Monoid (CNF a) where
+  mempty = CNF mempty
 
 invLit :: Lit a -> Lit a
 invLit (Pos a) = Neg a
 invLit (Neg a) = Pos a
 
-isEmpty :: Clause a -> Bool
-isEmpty (Disj literals) = Set.null literals
+isEmpty :: (Ord a) => Clause a -> Bool
+isEmpty (Disj literals) = literals == mempty
 
 allLiterals :: (Ord a) => CNF a -> Set.Set (Lit a)
 allLiterals (CNF clauses) = Set.unions $ Set.map (\(Disj xs) -> xs) clauses
 
-mapMaybe :: (Ord b) => (a -> Maybe b) -> Set.Set a -> Set.Set b
+mapMaybe :: (Foldable m, Ord b) => (a -> Maybe b) -> m a -> Set.Set b
 mapMaybe f values = foldMap resultToSet values
   where resultToSet value = case f value of
                               Just result -> Set.singleton result
                               Nothing     -> Set.empty
 
-posAtoms :: (Ord a) => Set.Set (Lit a) -> Set.Set (Atom a)
+posAtoms :: (Foldable m, Ord a) => m (Lit a) -> Set.Set (Atom a)
 posAtoms = mapMaybe extractPos
   where
     extractPos (Pos a) = Just a
     extractPos _       = Nothing
 
-negAtoms :: (Ord a) => Set.Set (Lit a) -> Set.Set (Atom a)
+negAtoms :: (Foldable m, Ord a) => m (Lit a) -> Set.Set (Atom a)
 negAtoms = mapMaybe extractNeg
   where
     extractNeg (Neg a) = Just a
@@ -90,11 +94,14 @@ allUnitLiterals (CNF clauses) = mapMaybe extractUnitLiteral clauses
 allDisjunctions :: (Ord a) => CNF a -> Set.Set (Clause a)
 allDisjunctions (CNF clauses) = mapMaybe extractDisjunction clauses
 
-addUnitClause :: (Ord a) => Lit a -> CNF a -> CNF a
-addUnitClause lit (CNF clauses) = CNF $ Set.insert (Disj $ Set.singleton lit) clauses
+makeUnitLiteral :: (Ord a) => Lit a -> Clause a
+makeUnitLiteral lit = Disj $ Set.singleton lit
 
-isConsistent :: (Ord a) => Set.Set (Lit a) -> Bool
-isConsistent literals = Set.null $ (posAtoms literals) `Set.intersection` (negAtoms literals)
+addUnitClause :: (Ord a) => Lit a -> CNF a -> CNF a
+addUnitClause lit = (<>) (CNF $ Set.singleton $ makeUnitLiteral lit)
+
+isConsistent :: (Foldable m, Ord a) => m (Lit a) -> Bool
+isConsistent literals = mempty == (posAtoms literals) `Set.intersection` (negAtoms literals)
 
 
 p = Pos . A
@@ -105,6 +112,3 @@ disj = Disj . Set.fromList
 
 cnf :: (Ord a) => [Clause a] -> CNF a
 cnf  = CNF  . Set.fromList
-
-combine :: (Ord a) => CNF a -> CNF a -> CNF a
-combine (CNF disjs) (CNF disjs') = CNF $ Set.union disjs disjs'

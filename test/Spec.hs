@@ -22,7 +22,7 @@ main = do
 prop_dpllMakesCNFValid :: CNF TestAtom -> Bool
 prop_dpllMakesCNFValid cnf = case dpll cnf of
   -- Can the result of dpll cnf be used to solve cnf?
-  Just cnf' -> isValidCNF (combine cnf cnf')
+  Just cnf' -> isValidCNF $ cnf <> cnf'
   Nothing   -> True
 
 
