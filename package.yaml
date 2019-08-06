@@ -24,6 +24,7 @@ dependencies:
 - containers
 - generic-random
 - QuickCheck
+- split
 
 library:
   source-dirs: src
