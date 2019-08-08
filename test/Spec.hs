@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# language DeriveGeneric #-}
 import Test.QuickCheck
 
 import CNF
@@ -18,6 +18,7 @@ main :: IO ()
 main = do
   quickCheck prop_dpllMakesCNFValid
   quickCheck prop_dpllMakesCNFValidSimple
+  quickCheck prop_dpllMakesCNFValidComplex
 
 prop_dpllMakesCNFValid :: CNF TestAtom -> Bool
 prop_dpllMakesCNFValid cnf = case dpll cnf of
@@ -35,4 +36,21 @@ genSimpleCNF = elements $ [ cnf [ disj [ p AA]
 prop_dpllMakesCNFValidSimple :: Gen Bool
 prop_dpllMakesCNFValidSimple = do
   cnf <- genSimpleCNF
+  pure $ isJust $ dpll cnf
+
+
+genComplexCNF :: Gen (CNF TestAtom)
+genComplexCNF = elements $ [ cnf [ disj [ n AA, p AB, p AC]
+                                 , disj [ p AA, p AC, p AD]
+                                 , disj [ p AA, p AC, n AD]
+                                 , disj [ p AA, n AC, p AD]
+                                 , disj [ p AA, n AC, n AD]
+                                 , disj [ n AA, p AB, n AC]
+                                 , disj [ n AA, n AB, p AC]
+                                 ]
+                           ]
+
+prop_dpllMakesCNFValidComplex :: Gen Bool
+prop_dpllMakesCNFValidComplex = do
+  cnf <- genComplexCNF
   pure $ isJust $ dpll cnf
