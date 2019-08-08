@@ -15,7 +15,7 @@ The implementation of the algorithm also needs to be made a lot faster if it is 
 TODO:
 
 - [x] Assert that if a given CNF problem can be solved by the DPLL algorithm without backtracking (i.e. one step), then the resulting solution is valid
-- [ ] Assert that is a CNF problem problem can be solved with backtracking, then the resulting solution is valid
+- [x] Assert that is a CNF problem problem can be solved with backtracking, then the resulting solution is valid
 - [ ] Solve a 4x4x4 Sudoku problem
 - [ ] Solve a 9x9x9 standard Sudoku problem
 - [ ] More granular tests for parts of the algorithm

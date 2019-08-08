@@ -53,4 +53,7 @@ genComplexCNF = elements $ [ cnf [ disj [ n AA, p AB, p AC]
 prop_dpllMakesCNFValidComplex :: Gen Bool
 prop_dpllMakesCNFValidComplex = do
   cnf <- genComplexCNF
-  pure $ isJust $ dpll cnf
+  pure $ case dpll cnf of
+    Just cnf' -> isValidCNF $ cnf <> cnf'
+    -- if no solution can be found, fail
+    Nothing   -> False
