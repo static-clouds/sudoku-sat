@@ -36,46 +36,42 @@ data Grid = Grid { sudokuSize :: Int } deriving (Show)
 
 gridSpan = [0..8]
 
-pos' (row, col, val) = Pos $ C { row = row, col = col, val = val }
-neg' (row, col, val) = Neg $ C { row = row, col = col, val = val }
-
 toDisj :: (Ord a) => [Lit a] -> Clause a
 toDisj lits = Disj $ Set.fromList lits
 
-posIf :: ((Int, Int, Int) -> Bool) -> [(Int, Int, Int)] -> [Lit SudokuCellAtom]
-posIf f values = map innerF values
-  where innerF a
-          | f a       = pos' a
-          | otherwise = neg' a
+posIf :: (a -> Bool) -> a -> Lit a
+posIf condition atom
+  | condition atom = Pos atom
+  | otherwise      = Neg atom
 
 cellRule :: Int -> Int -> Int -> [Lit SudokuCellAtom]
-cellRule row col val = posIf cond cellValues
+cellRule row col val = map (posIf cond) cellValues
   where
-    cellValues = [(row, col, v') | v' <- gridSpan]
-    cond (_, _, v') = v' == val
+    cellValues = [C { row = row, col = col, val = v'} | v' <- gridSpan]
+    cond (C {val = v'}) = v' == val
 
 rowRule :: Int -> Int -> Int -> [Lit SudokuCellAtom]
-rowRule row col val = posIf cond cellValues
+rowRule row col val = map (posIf cond) cellValues
   where
-    cellValues = [(row, col', val) | col' <- gridSpan]
-    cond (_, col', _) = col' == col
+    cellValues = [C { row = row, col = col', val = val } | col' <- gridSpan]
+    cond (C { col = col' }) = col' == col
 
 colRule :: Int -> Int -> Int -> [Lit SudokuCellAtom]
-colRule row col val = posIf cond cellValues
+colRule row col val = map (posIf cond) cellValues
   where
-    cellValues = [(row', col, val) | row' <- gridSpan]
-    cond (row', _, _) = row' == row
+    cellValues = [C { row = row', col = col, val = val } | row' <- gridSpan]
+    cond (C { row = row' }) = row' == row
 
 box' :: Int -> Int -> [(Int, Int)]
 box' r_ c_ = [(r, c) | r <- [(r_*3)..(r_*3 + 2)], c <- [(c_*3)..(c_*3 + 2)]]
 
 boxRule :: Int -> Int -> Int -> [Lit SudokuCellAtom]
-boxRule row col val = posIf cond cellValues
+boxRule row col val = map (posIf cond) cellValues
   where
     boxRow = row `quot` 3
     boxCol = col `quot` 3
-    cellValues = [(row, col, val) | (row, col) <- box' boxRow boxCol]
-    cond (row', col',_) = row' == row && col' == col
+    cellValues = [C {row = row, col = col, val = val} | (row, col) <- box' boxRow boxCol]
+    cond (C { row = row', col = col' }) = row' == row && col' == col
 
 uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
 uncurry3 f (a, b, c) = f a b c
