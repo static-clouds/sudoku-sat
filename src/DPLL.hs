@@ -40,14 +40,19 @@ makeBranches cnf = case (chooseLiteral cnf) of
                          ]
       Nothing         -> [cnf]
 
+data Result a = Solution a | NoSolution | Branches [a]
+
+dpll' :: (Ord a) => CNF a -> Result (CNF a)
+dpll' cnf
+  | isConsistentSetOfLiterals cnf = Solution cnf
+  | hasEmptyClauses           cnf = NoSolution
+  | otherwise                     = Branches $ makeBranches $ dpllStep cnf
 
 dpll :: (Ord a) => CNF a -> Maybe (CNF a)
-dpll cnf
-  | isConsistentSetOfLiterals cnf = Just cnf
-  | hasEmptyClauses           cnf = Nothing
-  | otherwise                     = seqMaybe $ map dpll $ makeBranches cnf'
-  where cnf' = dpllStep cnf
-
+dpll cnf = case dpll' cnf of
+  Solution cnf' -> Just cnf'
+  NoSolution    -> Nothing
+  Branches branches -> seqMaybe $ map dpll branches
 
 dpllStep :: (Ord a) => CNF a -> CNF a
 dpllStep = eliminateAllPureLiterals . unitPropagateAll
