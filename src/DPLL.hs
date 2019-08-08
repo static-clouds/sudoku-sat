@@ -48,11 +48,14 @@ dpll' cnf
   | hasEmptyClauses           cnf = NoSolution
   | otherwise                     = Branches $ makeBranches $ dpllStep cnf
 
-dpll :: (Ord a) => CNF a -> Maybe (CNF a)
-dpll cnf = case dpll' cnf of
+treeSearch :: (a -> Result a) -> a -> Maybe a
+treeSearch step cnf = case step cnf of
   Solution cnf' -> Just cnf'
   NoSolution    -> Nothing
-  Branches branches -> seqMaybe $ map dpll branches
+  Branches branches -> seqMaybe $ map (treeSearch step) branches
+
+dpll :: (Ord a) => CNF a -> Maybe (CNF a)
+dpll = treeSearch dpll'
 
 dpllStep :: (Ord a) => CNF a -> CNF a
 dpllStep = eliminateAllPureLiterals . unitPropagateAll
