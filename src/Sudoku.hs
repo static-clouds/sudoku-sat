@@ -79,12 +79,10 @@ uncurry3 f (a, b, c) = f a b c
 sudokuCnf :: CNF SudokuCellAtom
 sudokuCnf = CNF $ Set.fromList clauses
   where
-    clauses = cellRules ++ rowRules ++ colRules ++ boxRules
     params = [(row, col, val) | row <- gridSpan, col <- gridSpan, val <- gridSpan]
-    cellRules = map (toDisj . uncurry3 cellRule) params
-    rowRules  = map (toDisj . uncurry3 rowRule) params
-    colRules  = map (toDisj . uncurry3 colRule) params
-    boxRules  = map (toDisj . uncurry3 boxRule) params  
+    rules = [cellRule, rowRule, colRule, boxRule]
+    applyRule rule = map (toDisj . uncurry3 rule) params
+    clauses = concatMap applyRule rules
 
 
 easyData   = "7-6-9--8-X-----69--X98-5-2-7-X312-4---5X---153---X4---6-318X-6-8-9-31X--73-----X-4--2-8-7"
