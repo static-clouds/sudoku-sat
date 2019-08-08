@@ -2,7 +2,7 @@
 import Test.QuickCheck
 
 import CNF
-import DPLL(dpll)
+import DPLL(dpll, dpll', Result(..))
 import EvalCNF(isValidCNF)
 import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as Set
@@ -19,6 +19,7 @@ main = do
   quickCheck prop_dpllMakesCNFValid
   quickCheck prop_dpllMakesCNFValidSimple
   quickCheck prop_dpllMakesCNFValidComplex
+  quickCheck prop_dpllShrinksInput
 
 prop_dpllMakesCNFValid :: CNF TestAtom -> Bool
 prop_dpllMakesCNFValid cnf = case dpll cnf of
@@ -57,3 +58,13 @@ prop_dpllMakesCNFValidComplex = do
     Just cnf' -> isValidCNF $ cnf <> cnf'
     -- if no solution can be found, fail
     Nothing   -> False
+
+
+prop_dpllShrinksInput :: CNF TestAtom -> Bool
+prop_dpllShrinksInput cnf = case dpll' cnf of
+  Branches successors -> all isSmaller successors
+  _             -> True
+  where
+    isSmaller successor = moreUnitLiterals successor || fewerDisjunctions successor
+    moreUnitLiterals successor = numUnitLiterals successor > numUnitLiterals cnf
+    fewerDisjunctions successor = numDisjunctions successor < numDisjunctions cnf

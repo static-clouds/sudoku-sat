@@ -94,6 +94,12 @@ makeUnitLiteral lit = Disj $ Set.singleton lit
 addUnitClause :: (Ord a) => Lit a -> CNF a -> CNF a
 addUnitClause lit = (<>) (CNF $ Set.singleton $ makeUnitLiteral lit)
 
+numDisjunctions :: (Ord a) => CNF a -> Int
+numDisjunctions = length . allDisjunctions
+
+numUnitLiterals :: (Ord a) => CNF a -> Int
+numUnitLiterals  = length . allUnitLiterals
+
 isConsistent :: (Foldable m, Ord a) => m (Lit a) -> Bool
 isConsistent literals = mempty == (posAtoms literals) `Set.intersection` (negAtoms literals)
 
