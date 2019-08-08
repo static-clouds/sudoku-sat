@@ -26,7 +26,7 @@ toBoard :: String -> CNF SudokuCellAtom
 toBoard = toCNF . toMoves
   where
     toCNF :: [SudokuCellAtom] -> CNF SudokuCellAtom
-    toCNF = CNF . Set.fromList . map (Disj . Set.singleton . Pos . A)
+    toCNF = CNF . Set.fromList . map (makeUnitLiteral . Pos . A)
 
 data SudokuCellAtom = C { row :: Int, col :: Int, val :: Int } deriving (Eq, Ord)
 instance Show SudokuCellAtom where

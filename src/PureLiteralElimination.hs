@@ -5,11 +5,17 @@ import qualified Data.Set as Set
 
 import CNF (CNF(..), Clause(..), Lit(..), allLiterals, posAtoms, negAtoms)
 
+isUnitLiteral :: Clause a -> Bool
+isUnitLiteral (Disj lits) = Set.size lits == 1
+
+removeLiteral :: (Ord a) => Lit a -> Clause a -> Clause a
+removeLiteral lit (Disj lits) = Disj $ Set.delete lit lits
+
 deleteUnlessSingleton :: (Ord a) => Lit a -> Clause a -> Clause a
-deleteUnlessSingleton lit (Disj lits) = Disj newLits
-  where newLits
-          | Set.size lits == 1 = lits
-          | otherwise          = Set.delete lit lits
+deleteUnlessSingleton lit clause = f clause
+  where f
+          | isUnitLiteral clause = id
+          | otherwise            = removeLiteral lit
 
 eliminateLiteral :: (Ord a) => Lit a -> CNF a -> CNF a
 eliminateLiteral lit (CNF clauses) = CNF $ Set.map updateClause clauses
