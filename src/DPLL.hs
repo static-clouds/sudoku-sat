@@ -28,22 +28,24 @@ takeOne s
 chooseLiteral :: (Ord a) => CNF a -> Maybe (Lit a)
 chooseLiteral cnf = takeOne $ allLiterals cnf `Set.difference` allUnitLiterals cnf
 
-makeBranches :: (Ord a) => Lit a -> CNF a -> [CNF a]
-makeBranches lit cnf = map (flip addUnitClause $ cnf) [lit, invLit lit]
-
 seqMaybe :: [Maybe a] -> Maybe a
 seqMaybe []            = Nothing
 seqMaybe (Nothing:xs)  = seqMaybe xs
 seqMaybe ((Just a):xs) = Just a
 
+makeBranches :: (Ord a) => CNF a -> [CNF a]
+makeBranches cnf = case (chooseLiteral cnf) of
+      Just newLiteral -> [ addUnitClause newLiteral cnf
+                         , addUnitClause (invLit newLiteral) cnf
+                         ]
+      Nothing         -> [cnf]
+
+
 dpll :: (Ord a) => CNF a -> Maybe (CNF a)
 dpll cnf
   | isConsistentSetOfLiterals cnf = Just cnf
   | hasEmptyClauses           cnf = Nothing
-  | otherwise                     = case (chooseLiteral cnf') of
-      Just newLiteral -> seqMaybe $ map dpll $ makeBranches newLiteral cnf'
-      -- No more literals to add, call dpll one last time to check if a solution has been found
-      Nothing         -> dpll cnf'
+  | otherwise                     = seqMaybe $ map dpll $ makeBranches cnf'
   where cnf' = dpllStep cnf
 
 
