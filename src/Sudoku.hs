@@ -50,27 +50,34 @@ cellRule row col val = map (posIf cond) cellValues
     cellValues = [C { row = row, col = col, val = v'} | v' <- gridSpan]
     cond (C {val = v'}) = v' == val
 
+rowValues :: Int -> Int -> Int -> [SudokuCellAtom]
+rowValues row col val = [C { row = row, col = col', val = val } | col' <- gridSpan]
+
 rowRule :: Int -> Int -> Int -> [Lit SudokuCellAtom]
-rowRule row col val = map (posIf cond) cellValues
+rowRule row col val = map (posIf cond) $ rowValues row col val
   where
-    cellValues = [C { row = row, col = col', val = val } | col' <- gridSpan]
     cond (C { col = col' }) = col' == col
 
+colValues :: Int -> Int -> Int -> [SudokuCellAtom]
+colValues row col val = [C { row = row', col = col, val = val } | row' <- gridSpan]
+
 colRule :: Int -> Int -> Int -> [Lit SudokuCellAtom]
-colRule row col val = map (posIf cond) cellValues
+colRule row col val = map (posIf cond) $ colValues row col val
   where
-    cellValues = [C { row = row', col = col, val = val } | row' <- gridSpan]
     cond (C { row = row' }) = row' == row
 
 box' :: Int -> Int -> [(Int, Int)]
 box' r_ c_ = [(r, c) | r <- [(r_*3)..(r_*3 + 2)], c <- [(c_*3)..(c_*3 + 2)]]
 
-boxRule :: Int -> Int -> Int -> [Lit SudokuCellAtom]
-boxRule row col val = map (posIf cond) cellValues
+boxValues :: Int -> Int -> Int -> [SudokuCellAtom]
+boxValues row col val = [C {row = row, col = col, val = val} | (row, col) <- box' boxRow boxCol]
   where
     boxRow = row `quot` 3
     boxCol = col `quot` 3
-    cellValues = [C {row = row, col = col, val = val} | (row, col) <- box' boxRow boxCol]
+
+boxRule :: Int -> Int -> Int -> [Lit SudokuCellAtom]
+boxRule row col val = map (posIf cond) $ boxValues row col val
+  where
     cond (C { row = row', col = col' }) = row' == row && col' == col
 
 uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
