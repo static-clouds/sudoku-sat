@@ -8,13 +8,7 @@ import GHC.Generics
 import Generic.Random
 import Test.QuickCheck
 
-data Atom a = A a deriving (Eq, Ord, Generic)
-instance (Show a) => Show (Atom a) where
-  show (A s) = show s
-instance (Arbitrary a) => Arbitrary (Atom a) where
-  arbitrary = genericArbitraryU
-
-data Lit a = Pos (Atom a) | Neg (Atom a) deriving (Eq, Ord, Generic)
+data Lit a = Pos a | Neg a deriving (Eq, Ord, Generic)
 instance (Show a) => Show (Lit a) where
   show (Pos a) = show a
   show (Neg a) = "¬" ++ show a
@@ -66,13 +60,13 @@ mapMaybe f values = foldMap resultToSet values
                               Just result -> Set.singleton result
                               Nothing     -> Set.empty
 
-posAtoms :: (Foldable m, Ord a) => m (Lit a) -> Set.Set (Atom a)
+posAtoms :: (Foldable m, Ord a) => m (Lit a) -> Set.Set a
 posAtoms = mapMaybe extractPos
   where
     extractPos (Pos a) = Just a
     extractPos _       = Nothing
 
-negAtoms :: (Foldable m, Ord a) => m (Lit a) -> Set.Set (Atom a)
+negAtoms :: (Foldable m, Ord a) => m (Lit a) -> Set.Set a
 negAtoms = mapMaybe extractNeg
   where
     extractNeg (Neg a) = Just a
@@ -103,9 +97,8 @@ addUnitClause lit = (<>) (CNF $ Set.singleton $ makeUnitLiteral lit)
 isConsistent :: (Foldable m, Ord a) => m (Lit a) -> Bool
 isConsistent literals = mempty == (posAtoms literals) `Set.intersection` (negAtoms literals)
 
-
-p = Pos . A
-n = Neg . A
+p = Pos
+n = Neg
 
 disj :: (Ord a) => [Lit a] -> Clause a
 disj = Disj . Set.fromList

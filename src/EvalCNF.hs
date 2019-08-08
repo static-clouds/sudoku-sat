@@ -4,15 +4,15 @@ import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as Set
 
-import CNF(Atom, Clause(..), CNF(..), Lit(..), allUnitLiterals, allDisjunctions)
+import CNF(Clause(..), CNF(..), Lit(..), allUnitLiterals, allDisjunctions)
 
-type AtomMapping a = Map.Map (Atom a) Bool
+type AtomMapping a = Map.Map a Bool
 
 truthValue :: Lit a -> Bool
 truthValue (Pos _) = True
 truthValue (Neg _) = False
 
-unwrapLit :: Lit a -> Atom a
+unwrapLit :: Lit a -> a
 unwrapLit (Pos a) = a
 unwrapLit (Neg a) = a
 

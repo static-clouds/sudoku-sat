@@ -26,7 +26,7 @@ toBoard :: String -> CNF SudokuCellAtom
 toBoard = toCNF . toMoves
   where
     toCNF :: [SudokuCellAtom] -> CNF SudokuCellAtom
-    toCNF = CNF . Set.fromList . map (makeUnitLiteral . Pos . A)
+    toCNF = CNF . Set.fromList . map (makeUnitLiteral . Pos)
 
 data SudokuCellAtom = C { row :: Int, col :: Int, val :: Int } deriving (Eq, Ord)
 instance Show SudokuCellAtom where
@@ -36,8 +36,8 @@ data Grid = Grid { sudokuSize :: Int } deriving (Show)
 
 gridSpan = [0..8]
 
-pos' (row, col, val) = Pos $ A $ C { row = row, col = col, val = val }
-neg' (row, col, val) = Neg $ A $ C { row = row, col = col, val = val }
+pos' (row, col, val) = Pos $ C { row = row, col = col, val = val }
+neg' (row, col, val) = Neg $ C { row = row, col = col, val = val }
 
 toDisj :: (Ord a) => [Lit a] -> Clause a
 toDisj lits = Disj $ Set.fromList lits
