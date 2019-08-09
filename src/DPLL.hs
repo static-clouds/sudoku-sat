@@ -1,9 +1,9 @@
 module DPLL where
 
 import qualified Data.List as List
-import Data.Maybe (catMaybes, fromJust, isJust, listToMaybe, mapMaybe)
+import Data.Maybe (fromJust, isJust)
 import qualified Data.Set  as Set
-import CNF (CNF(..), Clause(..), Lit, invLit, posAtoms, negAtoms, isEmpty, extractUnitLiteral, allLiterals, allUnitLiterals, addUnitClause, isConsistent)
+import CNF (CNF(..), Lit, invLit, isEmpty, extractUnitLiteral, allLiterals, allUnitLiterals, addUnitClause, isConsistent)
 import PureLiteralElimination (eliminateAllPureLiterals)
 import UnitPropagation (unitPropagateAll)
 

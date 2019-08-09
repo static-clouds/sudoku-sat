@@ -86,6 +86,9 @@ allDisjunctions (CNF clauses) = Set.filter (not . isUnitLiteral) clauses
 isUnitLiteral :: Clause a -> Bool
 isUnitLiteral (Disj literals) = Set.size literals == 1
 
+removeLiteral :: (Ord a) => Lit a -> Clause a -> Clause a
+removeLiteral lit (Disj lits) = Disj $ Set.delete lit lits
+
 makeUnitLiteral :: (Ord a) => Lit a -> Clause a
 makeUnitLiteral lit = Disj $ Set.singleton lit
 

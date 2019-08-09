@@ -3,13 +3,7 @@ module PureLiteralElimination where
 import qualified Data.List as List
 import qualified Data.Set as Set
 
-import CNF (CNF(..), Clause(..), Lit(..), allLiterals, posAtoms, negAtoms)
-
-isUnitLiteral :: Clause a -> Bool
-isUnitLiteral (Disj lits) = Set.size lits == 1
-
-removeLiteral :: (Ord a) => Lit a -> Clause a -> Clause a
-removeLiteral lit (Disj lits) = Disj $ Set.delete lit lits
+import CNF (CNF(..), Clause(..), Lit(..), allLiterals, isUnitLiteral, posAtoms, negAtoms, removeLiteral)
 
 deleteUnlessSingleton :: (Ord a) => Lit a -> Clause a -> Clause a
 deleteUnlessSingleton lit clause = f clause
