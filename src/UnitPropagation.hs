@@ -3,13 +3,13 @@ module UnitPropagation where
 import qualified Data.List as List
 import Data.Maybe (catMaybes)
 import qualified Data.Set as Set
-import CNF (CNF(..), Clause(..), Lit, allUnitLiterals, fromUnitLiterals, invLit, makeUnitLiteral, mapMaybe, removeLiteral)
+import CNF (CNF(..), Clause, Lit, allUnitLiterals, fromUnitLiterals, invLit, litInClause, makeUnitLiteral, mapMaybe, removeLiteral)
 
 unitPropagate :: (Ord a) => Lit a -> Clause a -> Maybe (Clause a)
-unitPropagate lit clause@(Disj xs)
-      | lit  `elem` xs = Nothing
-      | lit' `elem` xs = Just $ removeLiteral lit' clause
-      | otherwise      = Just $ clause
+unitPropagate lit clause
+      | litInClause lit clause  = Nothing
+      | litInClause lit' clause = Just $ removeLiteral lit' clause
+      | otherwise               = Just $ clause
   where lit' = invLit lit
 
 unitPropagate' :: (Ord a) => Lit a -> CNF a -> CNF a

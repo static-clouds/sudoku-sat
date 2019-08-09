@@ -104,6 +104,9 @@ numUnitLiterals  = length . allUnitLiterals
 isConsistent :: (Foldable m, Ord a) => m (Lit a) -> Bool
 isConsistent literals = mempty == (posAtoms literals) `Set.intersection` (negAtoms literals)
 
+litInClause :: (Eq a) => Lit a -> Clause a -> Bool
+litInClause lit (Disj xs) = lit `elem` xs
+
 mapClauses :: (Ord a) => (Clause a -> Clause a) -> CNF a -> CNF a
 mapClauses f (CNF clauses) = CNF $ Set.map f clauses
 
