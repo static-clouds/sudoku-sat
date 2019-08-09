@@ -107,6 +107,9 @@ isConsistent literals = mempty == (posAtoms literals) `Set.intersection` (negAto
 mapClauses :: (Ord a) => (Clause a -> Clause a) -> CNF a -> CNF a
 mapClauses f (CNF clauses) = CNF $ Set.map f clauses
 
+fromUnitLiterals :: (Ord a) => Set.Set (Lit a) -> CNF a
+fromUnitLiterals = CNF . Set.map makeUnitLiteral
+
 p = Pos
 n = Neg
 

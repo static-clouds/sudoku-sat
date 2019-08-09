@@ -3,13 +3,13 @@ module UnitPropagation where
 import qualified Data.List as List
 import Data.Maybe (catMaybes)
 import qualified Data.Set as Set
-import CNF
+import CNF (CNF(..), Clause(..), Lit, allUnitLiterals, fromUnitLiterals, invLit, makeUnitLiteral, mapMaybe, removeLiteral)
 
 unitPropagate :: (Ord a) => Lit a -> Clause a -> Maybe (Clause a)
-unitPropagate lit (Disj xs)
+unitPropagate lit clause@(Disj xs)
       | lit  `elem` xs = Nothing
-      | lit' `elem` xs = Just $ Disj $ Set.delete lit' xs
-      | otherwise      = Just $ Disj xs
+      | lit' `elem` xs = Just $ removeLiteral lit' clause
+      | otherwise      = Just $ clause
   where lit' = invLit lit
 
 unitPropagate' :: (Ord a) => Lit a -> CNF a -> CNF a
@@ -26,9 +26,7 @@ propagateUnitLiterals (propagated, cnf) = (propagated', cnf')
     cnf'        = unitPropagate' nextLiteral cnf
 
 unitPropagateAll :: (Ord a) => CNF a -> CNF a
-unitPropagateAll cnf = CNF $ Set.union updatedClauses propagatedClauses
+unitPropagateAll cnf = reducedCnf <> fromUnitLiterals propagated
   where
     -- Propagate the unit literals through the CNF expression
-    (propagated, (CNF updatedClauses)) = until (allUnitLiteralsPropagated . snd) propagateUnitLiterals (Set.empty, cnf)
-    -- Add the propagated unit literals back into the CNF expression
-    propagatedClauses = Set.map makeUnitLiteral propagated
+    (propagated, reducedCnf) = until (allUnitLiteralsPropagated . snd) propagateUnitLiterals (Set.empty, cnf)
