@@ -16,15 +16,18 @@ unwrapLit :: Lit a -> a
 unwrapLit (Pos a) = a
 unwrapLit (Neg a) = a
 
+evaluate :: (Lit a, Bool) -> Bool
+evaluate ((Pos _), True ) = True
+evaluate ((Neg _), False) = True
+evaluate _                = False
+
+
 disjunctionIsTrue :: (Ord a) => AtomMapping a -> Clause a -> Bool
 disjunctionIsTrue atomMapping (Disj lits') = any evaluate $ zip lits values
   where
     lits = Set.toList lits'
     atoms = map unwrapLit lits
     values = map (\atom -> Map.findWithDefault False atom atomMapping) $ atoms
-    evaluate ((Pos _), True ) = True
-    evaluate ((Neg _), False) = True
-    evaluate _                = False
 
 isValidClause :: (Ord a) => AtomMapping a -> Clause a -> Bool
 isValidClause atomMapping clause = disjunctionIsTrue atomMapping clause
@@ -33,7 +36,7 @@ makeAtomMapping :: (Ord a) => Set.Set (Lit a) -> AtomMapping a
 makeAtomMapping literals = Map.mapKeys unwrapLit $ Map.fromSet truthValue literals
 
 isValidCNF :: (Ord a) => CNF a -> Bool
-isValidCNF cnf@(CNF clauses) = all (isValidClause atomMapping) disjunctions
+isValidCNF cnf = all (isValidClause atomMapping) disjunctions
   where
     atomMapping = makeAtomMapping literals
     literals = allUnitLiterals cnf
