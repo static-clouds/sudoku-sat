@@ -73,14 +73,9 @@ negAtoms = mapMaybe extractNeg
     extractNeg _       = Nothing
 
 extractUnitLiteral :: Clause a -> Maybe (Lit a)
-extractUnitLiteral (Disj literals)
-  | Set.size literals == 1 = Just $ Set.elemAt 0 literals
-  | otherwise              = Nothing
-
-extractDisjunction :: Clause a -> Maybe (Clause a)
-extractDisjunction (Disj literals)
-  | Set.size literals > 1  = Just (Disj literals)
-  | otherwise              = Nothing
+extractUnitLiteral clause@(Disj literals)
+  | isUnitLiteral clause = Just $ Set.elemAt 0 literals
+  | otherwise            = Nothing
 
 allUnitLiterals :: (Ord a) => CNF a -> Set.Set (Lit a)
 allUnitLiterals (CNF clauses) = mapMaybe extractUnitLiteral clauses
