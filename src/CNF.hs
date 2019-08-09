@@ -86,7 +86,10 @@ allUnitLiterals :: (Ord a) => CNF a -> Set.Set (Lit a)
 allUnitLiterals (CNF clauses) = mapMaybe extractUnitLiteral clauses
 
 allDisjunctions :: (Ord a) => CNF a -> Set.Set (Clause a)
-allDisjunctions (CNF clauses) = mapMaybe extractDisjunction clauses
+allDisjunctions (CNF clauses) = Set.filter (not . isUnitLiteral) clauses
+
+isUnitLiteral :: Clause a -> Bool
+isUnitLiteral (Disj literals) = Set.size literals == 1
 
 makeUnitLiteral :: (Ord a) => Lit a -> Clause a
 makeUnitLiteral lit = Disj $ Set.singleton lit
