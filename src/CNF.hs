@@ -117,6 +117,19 @@ litInClause lit (Disj xs) = lit `elem` xs
 mapClauses :: (Ord a) => (Clause a -> Clause a) -> CNF a -> CNF a
 mapClauses f (CNF clauses) = CNF $ Set.map f clauses
 
+-- These three functions are similar to fmap, but I have chosen not to define
+-- instances of Functor because these actually violate the Functor laws
+-- (e.g. if a function being used to map is not injective)
+mapCnf :: (Ord a, Ord b) => (a -> b) -> CNF a -> CNF b
+mapCnf f (CNF clauses) = CNF $ Set.map (mapClause f) clauses
+
+mapClause :: (Ord a, Ord b) => (a -> b) -> Clause a -> Clause b
+mapClause f (Disj lits) = Disj $ Set.map (mapLit f) lits
+
+mapLit :: (Ord a, Ord b) => (a -> b) -> Lit a -> Lit b
+mapLit f (Lit p a) = Lit p (f a)
+
+
 fromUnitLiterals :: (Ord a) => Set.Set (Lit a) -> CNF a
 fromUnitLiterals = CNF . Set.map makeUnitLiteral
 
