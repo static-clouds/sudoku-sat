@@ -4,40 +4,41 @@ import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as Set
 
-import CNF(Clause(..), CNF(..), Lit(..), allUnitLiterals, allDisjunctions)
+import CNF(Clause(..), CNF(..), Lit(..), Polarity(..), allUnitLiterals, allDisjunctions)
 
 type AtomMapping a = Map.Map a Bool
 
-truthValue :: Lit a -> Bool
-truthValue (Pos _) = True
-truthValue (Neg _) = False
+truthValue :: Polarity -> Bool
+truthValue Pos = True
+truthValue Neg = False
 
-unwrapLit :: Lit a -> a
-unwrapLit (Pos a) = a
-unwrapLit (Neg a) = a
+evaluateLit :: Lit Bool -> Bool
+evaluateLit (Lit polarity value) = value == truthValue polarity
 
-evaluate :: (Lit a, Bool) -> Bool
-evaluate ((Pos _), True ) = True
-evaluate ((Neg _), False) = True
-evaluate _                = False
+evaluateClause :: Clause Bool -> Bool
+evaluateClause (Disj lits) = any evaluateLit lits
 
+evaluateCnf :: CNF Bool -> Bool
+evaluateCnf (CNF clauses) = all evaluateClause clauses
 
-disjunctionIsTrue :: (Ord a) => AtomMapping a -> Clause a -> Bool
-disjunctionIsTrue atomMapping (Disj lits') = any evaluate $ zip lits values
-  where
-    lits = Set.toList lits'
-    atoms = map unwrapLit lits
-    values = map (\atom -> Map.findWithDefault False atom atomMapping) $ atoms
+replaceAtomsInCnf :: (Ord a) => AtomMapping a -> CNF a -> CNF Bool
+replaceAtomsInCnf mapping (CNF clauses) = CNF $ Set.map (replaceAtomsInClause mapping) clauses
 
-isValidClause :: (Ord a) => AtomMapping a -> Clause a -> Bool
-isValidClause atomMapping clause = disjunctionIsTrue atomMapping clause
+replaceAtomsInClause :: (Ord a) => AtomMapping a -> Clause a -> Clause Bool
+replaceAtomsInClause mapping (Disj lits) = Disj $ Set.map (replaceAtomsInLit mapping) lits
+
+replaceAtomsInLit :: (Ord a) => AtomMapping a -> Lit a -> Lit Bool
+replaceAtomsInLit mapping (Lit p a) = Lit p a'
+  where a' = Map.findWithDefault False a mapping
 
 makeAtomMapping :: (Ord a) => Set.Set (Lit a) -> AtomMapping a
-makeAtomMapping literals = Map.mapKeys unwrapLit $ Map.fromSet truthValue literals
+makeAtomMapping literals = Map.fromList pairs
+  where
+    pairs = Set.toList $ Set.map (\(Lit p a) -> (a, truthValue p)) literals
 
 isValidCNF :: (Ord a) => CNF a -> Bool
-isValidCNF cnf = all (isValidClause atomMapping) disjunctions
+isValidCNF cnf = evaluateCnf $ replaceAtomsInCnf atomMapping cnfToSolve
   where
     atomMapping = makeAtomMapping literals
     literals = allUnitLiterals cnf
-    disjunctions = allDisjunctions cnf
+    cnfToSolve = CNF $ allDisjunctions cnf

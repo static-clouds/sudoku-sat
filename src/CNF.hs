@@ -8,10 +8,14 @@ import GHC.Generics
 import Generic.Random
 import Test.QuickCheck
 
-data Lit a = Pos a | Neg a deriving (Eq, Ord, Generic)
+data Polarity = Pos | Neg deriving (Eq, Ord, Generic)
+instance Arbitrary Polarity where
+  arbitrary = genericArbitraryU
+
+data Lit a = Lit Polarity a deriving (Eq, Ord, Generic)
 instance (Show a) => Show (Lit a) where
-  show (Pos a) = show a
-  show (Neg a) = "¬" ++ show a
+  show (Lit Pos a) = show a
+  show (Lit Neg a) = "¬" ++ show a
 instance (Arbitrary a) => Arbitrary (Lit a) where
   arbitrary = genericArbitraryU
 
@@ -44,9 +48,12 @@ instance (Ord a) => Semigroup (CNF a) where
 instance (Ord a) => Monoid (CNF a) where
   mempty = CNF mempty
 
+invert :: Polarity -> Polarity
+invert Pos = Neg
+invert Neg = Pos
+
 invLit :: Lit a -> Lit a
-invLit (Pos a) = Neg a
-invLit (Neg a) = Pos a
+invLit (Lit p a) = Lit (invert p) a
 
 isEmpty :: (Ord a) => Clause a -> Bool
 isEmpty (Disj literals) = literals == mempty
@@ -60,17 +67,17 @@ mapMaybe f values = foldMap resultToSet values
                               Just result -> Set.singleton result
                               Nothing     -> Set.empty
 
-posAtoms :: (Foldable m, Ord a) => m (Lit a) -> Set.Set a
-posAtoms = mapMaybe extractPos
-  where
-    extractPos (Pos a) = Just a
-    extractPos _       = Nothing
+literalAtom :: Lit a -> a
+literalAtom (Lit _ a) = a
 
-negAtoms :: (Foldable m, Ord a) => m (Lit a) -> Set.Set a
-negAtoms = mapMaybe extractNeg
-  where
-    extractNeg (Neg a) = Just a
-    extractNeg _       = Nothing
+hasPolarity :: Polarity -> Lit a -> Bool
+hasPolarity p (Lit p' _) = p == p'
+
+posAtoms :: (Ord a) => Set.Set (Lit a) -> Set.Set a
+posAtoms = (Set.map literalAtom) . Set.filter (hasPolarity Pos)
+
+negAtoms :: (Ord a) => Set.Set (Lit a) -> Set.Set a
+negAtoms = (Set.map literalAtom) . Set.filter (hasPolarity Neg)
 
 extractUnitLiteral :: Clause a -> Maybe (Lit a)
 extractUnitLiteral clause@(Disj literals)
@@ -101,7 +108,7 @@ numDisjunctions = length . allDisjunctions
 numUnitLiterals :: (Ord a) => CNF a -> Int
 numUnitLiterals  = length . allUnitLiterals
 
-isConsistent :: (Foldable m, Ord a) => m (Lit a) -> Bool
+isConsistent :: (Ord a) => Set.Set (Lit a) -> Bool
 isConsistent literals = mempty == (posAtoms literals) `Set.intersection` (negAtoms literals)
 
 litInClause :: (Eq a) => Lit a -> Clause a -> Bool
@@ -113,8 +120,16 @@ mapClauses f (CNF clauses) = CNF $ Set.map f clauses
 fromUnitLiterals :: (Ord a) => Set.Set (Lit a) -> CNF a
 fromUnitLiterals = CNF . Set.map makeUnitLiteral
 
-p = Pos
-n = Neg
+
+makePos :: a -> Lit a
+makePos = Lit Pos
+
+makeNeg :: a -> Lit a
+makeNeg = Lit Neg
+
+
+p = Lit Pos
+n = Lit Neg
 
 disj :: (Ord a) => [Lit a] -> Clause a
 disj = Disj . Set.fromList

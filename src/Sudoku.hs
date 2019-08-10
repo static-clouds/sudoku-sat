@@ -26,7 +26,7 @@ toBoard :: String -> CNF SudokuCellAtom
 toBoard = toCNF . toMoves
   where
     toCNF :: [SudokuCellAtom] -> CNF SudokuCellAtom
-    toCNF = CNF . Set.fromList . map (makeUnitLiteral . Pos)
+    toCNF = CNF . Set.fromList . map (makeUnitLiteral . Lit Pos)
 
 data SudokuCellAtom = C { row :: Int, col :: Int, val :: Int } deriving (Eq, Ord)
 instance Show SudokuCellAtom where
@@ -40,9 +40,10 @@ toDisj :: (Ord a) => [Lit a] -> Clause a
 toDisj lits = Disj $ Set.fromList lits
 
 posIf :: (a -> Bool) -> a -> Lit a
-posIf condition atom
-  | condition atom = Pos atom
-  | otherwise      = Neg atom
+posIf condition atom = Lit polarity atom
+  where polarity
+          | condition atom = Pos
+          | otherwise      = Neg
 
 cellRule :: Int -> Int -> Int -> [Lit SudokuCellAtom]
 cellRule row col val = map (posIf cond) cellValues
