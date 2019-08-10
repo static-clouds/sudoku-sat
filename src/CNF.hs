@@ -127,7 +127,7 @@ numUnitLiterals :: (Ord a) => CNF a -> Int
 numUnitLiterals  = length . allUnitLiterals
 
 isConsistent :: (Ord a) => Set.Set (Lit a) -> Bool
-isConsistent literals = mempty == (posAtoms literals) `Set.intersection` (negAtoms literals)
+isConsistent literals = Set.disjoint (posAtoms literals) (negAtoms literals)
 
 litInClause :: (Eq a) => Lit a -> Clause a -> Bool
 litInClause _ Empty                = False
