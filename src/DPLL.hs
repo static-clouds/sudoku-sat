@@ -40,7 +40,7 @@ makeBranches cnf = case (chooseLiteral cnf) of
                          ]
       Nothing         -> [cnf]
 
-data Result a = Solution a | NoSolution | Branches [a]
+data Result a = Solution a | NoSolution | Branches [a] deriving Show
 
 dpll' :: (Ord a) => CNF a -> Result (CNF a)
 dpll' cnf

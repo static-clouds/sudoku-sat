@@ -1,6 +1,6 @@
 module Sudoku where
 
-import CNF
+import CNF(CNF(..), Lit(..), Polarity(..), makeUnitLiteral, clauseFromSet)
 import GHC.Generics
 import Data.List.Split (splitOn)
 import Data.Maybe (fromJust, isJust)
@@ -36,8 +36,6 @@ data Grid = Grid { sudokuSize :: Int } deriving (Show)
 
 gridSpan = [0..8]
 
-toDisj :: (Ord a) => [Lit a] -> Clause a
-toDisj lits = Disj $ Set.fromList lits
 
 posIf :: (a -> Bool) -> a -> Lit a
 posIf condition atom = Lit polarity atom
@@ -89,8 +87,11 @@ sudokuCnf = CNF $ Set.fromList clauses
   where
     params = [(row, col, val) | row <- gridSpan, col <- gridSpan, val <- gridSpan]
     rules = [cellRule, rowRule, colRule, boxRule]
-    applyRule rule = map (toDisj . uncurry3 rule) params
+    applyRule rule = map (clauseFromSet . Set.fromList . uncurry3 rule) params
     clauses = concatMap applyRule rules
 
 
 easyData   = "7-6-9--8-X-----69--X98-5-2-7-X312-4---5X---153---X4---6-318X-6-8-9-31X--73-----X-4--2-8-7"
+mediumData = "--6-3--5-X------2-8X-8--95--4X934---527X----4----X815---649X2--81--9-X4-1------X-6--7-3--"
+hardData   = "73------4X-----32--X--958----X17------5X--57413--X3------71X----391--X--24-----X8------62"
+evilData   = "-2---4-8-X--79---5-X-----7-3-X67---92--X---------X--16---93X-5-8-----X-9---14--X-4-7---1-"

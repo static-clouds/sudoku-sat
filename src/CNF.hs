@@ -3,6 +3,7 @@
 module CNF where
 
 import qualified Data.List as List
+import Data.Maybe (isJust)
 import qualified Data.Set as Set
 import GHC.Generics
 import Generic.Random
@@ -19,14 +20,15 @@ instance (Show a) => Show (Lit a) where
 instance (Arbitrary a) => Arbitrary (Lit a) where
   arbitrary = genericArbitraryU
 
-data Clause a = Disj (Set.Set (Lit a)) deriving (Eq, Generic, Ord)
+data Clause a = Disj (Set.Set (Lit a)) | UnitLiteral (Lit a) | Empty deriving (Eq, Generic, Ord)
 instance (Show a) => Show (Clause a) where
-  show (Disj literals)
-    | Set.null literals = "∅"
-    | otherwise        = "(" ++ (List.intercalate " ∨ " $ showItems) ++ ")"
-      where showItems = Set.toList $ Set.map show literals
+  show (Disj literals) = "(" ++ (List.intercalate " ∨ " $ showItems) ++ ")"
+    where showItems = Set.toList $ Set.map show literals
+  show (UnitLiteral literal) = show literal
+  show Empty = "∅"
+
 instance (Arbitrary a, Ord a) => Arbitrary (Clause a) where
-  arbitrary = Disj <$> do
+  arbitrary = clauseFromSet <$> do
     -- for all a, don't generate a disjunction containing both a and ¬a
     lits <- suchThat' largeEnough $ suchThat' isConsistent $ arbitrary
     return lits
@@ -34,6 +36,14 @@ instance (Arbitrary a, Ord a) => Arbitrary (Clause a) where
       suchThat' = flip suchThat
 
       largeEnough lits = (Set.size lits) `elem` [1, 2, 3]
+
+-- Constructor for Clause
+clauseFromSet :: (Ord a) => Set.Set (Lit a) -> Clause a
+clauseFromSet lits = case Set.size lits of
+  0 -> Empty
+  1 -> UnitLiteral $ Set.elemAt 0 lits
+  _ -> Disj lits
+
 
 data CNF a = CNF (Set.Set (Clause a)) deriving (Eq, Generic)
 instance (Show a) => Show (CNF a) where
@@ -56,10 +66,15 @@ invLit :: Lit a -> Lit a
 invLit (Lit p a) = Lit (invert p) a
 
 isEmpty :: (Ord a) => Clause a -> Bool
-isEmpty (Disj literals) = literals == mempty
+isEmpty Empty = True
+isEmpty _     = False
+
+clauseToSet Empty           = Set.empty
+clauseToSet (UnitLiteral a) = Set.singleton a
+clauseToSet (Disj lits)     = lits
 
 allLiterals :: (Ord a) => CNF a -> Set.Set (Lit a)
-allLiterals (CNF clauses) = Set.unions $ Set.map (\(Disj xs) -> xs) clauses
+allLiterals (CNF clauses) = Set.unions $ Set.map clauseToSet clauses
 
 mapMaybe :: (Foldable m, Ord b) => (a -> Maybe b) -> m a -> Set.Set b
 mapMaybe f values = foldMap resultToSet values
@@ -80,24 +95,27 @@ negAtoms :: (Ord a) => Set.Set (Lit a) -> Set.Set a
 negAtoms = (Set.map literalAtom) . Set.filter (hasPolarity Neg)
 
 extractUnitLiteral :: Clause a -> Maybe (Lit a)
-extractUnitLiteral clause@(Disj literals)
-  | isUnitLiteral clause = Just $ Set.elemAt 0 literals
-  | otherwise            = Nothing
+extractUnitLiteral (UnitLiteral lit) = Just lit
+extractUnitLiteral _                 = Nothing
 
 allUnitLiterals :: (Ord a) => CNF a -> Set.Set (Lit a)
 allUnitLiterals (CNF clauses) = mapMaybe extractUnitLiteral clauses
 
 allDisjunctions :: (Ord a) => CNF a -> Set.Set (Clause a)
-allDisjunctions (CNF clauses) = Set.filter (not . isUnitLiteral) clauses
+allDisjunctions (CNF clauses) = Set.filter isDisjunction clauses
 
 isUnitLiteral :: Clause a -> Bool
-isUnitLiteral (Disj literals) = Set.size literals == 1
+isUnitLiteral = isJust . extractUnitLiteral
+
+isDisjunction :: Clause a -> Bool
+isDisjunction (Disj _) = True
+isDisjunction _        = False
 
 removeLiteral :: (Ord a) => Lit a -> Clause a -> Clause a
-removeLiteral lit (Disj lits) = Disj $ Set.delete lit lits
+removeLiteral lit = clauseFromSet . (Set.delete lit) . clauseToSet
 
 makeUnitLiteral :: (Ord a) => Lit a -> Clause a
-makeUnitLiteral lit = Disj $ Set.singleton lit
+makeUnitLiteral = UnitLiteral
 
 addUnitClause :: (Ord a) => Lit a -> CNF a -> CNF a
 addUnitClause lit = (<>) (CNF $ Set.singleton $ makeUnitLiteral lit)
@@ -112,7 +130,9 @@ isConsistent :: (Ord a) => Set.Set (Lit a) -> Bool
 isConsistent literals = mempty == (posAtoms literals) `Set.intersection` (negAtoms literals)
 
 litInClause :: (Eq a) => Lit a -> Clause a -> Bool
-litInClause lit (Disj xs) = lit `elem` xs
+litInClause _ Empty                = False
+litInClause lit (UnitLiteral lit') = lit == lit'
+litInClause lit (Disj xs)          = lit `elem` xs
 
 mapClauses :: (Ord a) => (Clause a -> Clause a) -> CNF a -> CNF a
 mapClauses f (CNF clauses) = CNF $ Set.map f clauses
@@ -124,7 +144,7 @@ mapCnf :: (Ord a, Ord b) => (a -> b) -> CNF a -> CNF b
 mapCnf f (CNF clauses) = CNF $ Set.map (mapClause f) clauses
 
 mapClause :: (Ord a, Ord b) => (a -> b) -> Clause a -> Clause b
-mapClause f (Disj lits) = Disj $ Set.map (mapLit f) lits
+mapClause f (Disj lits) = clauseFromSet $ Set.map (mapLit f) lits
 
 mapLit :: (Ord a, Ord b) => (a -> b) -> Lit a -> Lit b
 mapLit f (Lit p a) = Lit p (f a)
@@ -145,7 +165,7 @@ p = Lit Pos
 n = Lit Neg
 
 disj :: (Ord a) => [Lit a] -> Clause a
-disj = Disj . Set.fromList
+disj = clauseFromSet . Set.fromList
 
 cnf :: (Ord a) => [Clause a] -> CNF a
 cnf  = CNF  . Set.fromList

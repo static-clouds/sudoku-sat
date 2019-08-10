@@ -16,6 +16,8 @@ evaluateLit :: Lit Bool -> Bool
 evaluateLit (Lit polarity value) = value == truthValue polarity
 
 evaluateClause :: Clause Bool -> Bool
+evaluateClause Empty = False
+evaluateClause (UnitLiteral lit) = evaluateLit lit
 evaluateClause (Disj lits) = any evaluateLit lits
 
 evaluateCnf :: CNF Bool -> Bool
