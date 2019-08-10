@@ -19,8 +19,9 @@ allPureLiterals cnf = purePosLiterals <> pureNegLiterals
   where
     purePosLiterals = Set.map makePos $ posAtoms' `Set.difference` negAtoms'
     pureNegLiterals = Set.map makeNeg $ negAtoms' `Set.difference` posAtoms'
-    posAtoms' = posAtoms $ allLiterals cnf
-    negAtoms' = negAtoms $ allLiterals cnf
+    posAtoms' = posAtoms $ a
+    negAtoms' = negAtoms $ a
+    a = allLiterals cnf
 
 eliminateAllPureLiterals :: (Ord a) => (Set.Set (Lit a), CNF a) -> (Set.Set (Lit a), CNF a)
 eliminateAllPureLiterals (propagated, cnf) = (propagated <> pureLiterals, Set.fold eliminateLiteral cnf pureLiterals)
