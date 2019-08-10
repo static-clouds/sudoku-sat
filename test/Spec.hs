@@ -2,7 +2,7 @@
 import Test.QuickCheck
 
 import CNF
-import DPLL(dpll, dpll', Result(..))
+import DPLL(dpll, dpll', Result(..), fromDPLLState)
 import EvalCNF(isValidCNF)
 import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as Set
@@ -61,8 +61,8 @@ prop_dpllMakesCNFValidComplex = do
 
 
 prop_dpllShrinksInput :: CNF TestAtom -> Bool
-prop_dpllShrinksInput cnf = case dpll' cnf of
-  Branches successors -> all isSmaller successors
+prop_dpllShrinksInput cnf = case dpll' (Set.empty, cnf) of
+  Branches successors -> all (isSmaller . fromDPLLState) successors
   _             -> True
   where
     isSmaller successor = moreUnitLiterals successor || fewerDisjunctions successor

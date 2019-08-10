@@ -3,7 +3,7 @@ module DPLL where
 import qualified Data.List as List
 import Data.Maybe (fromJust, isJust)
 import qualified Data.Set  as Set
-import CNF (CNF(..), Lit, invLit, isEmpty, extractUnitLiteral, allLiterals, allUnitLiterals, addUnitClause, isConsistent)
+import CNF (CNF(..), Lit, invLit, isEmpty, extractUnitLiteral, allLiterals, allUnitLiterals, addUnitClause, isConsistent, fromUnitLiterals)
 import PureLiteralElimination (eliminateAllPureLiterals)
 import UnitPropagation (unitPropagateAll)
 
@@ -33,20 +33,22 @@ seqMaybe []            = Nothing
 seqMaybe (Nothing:xs)  = seqMaybe xs
 seqMaybe ((Just a):xs) = Just a
 
-makeBranches :: (Ord a) => CNF a -> [CNF a]
-makeBranches cnf = case (chooseLiteral cnf) of
-      Just newLiteral -> [ addUnitClause newLiteral cnf
-                         , addUnitClause (invLit newLiteral) cnf
+makeBranches :: (Ord a) => DPLLState a -> [DPLLState a]
+makeBranches (propagated, cnf) = case (chooseLiteral cnf) of
+      Just newLiteral -> [ (propagated, addUnitClause newLiteral cnf)
+                         , (propagated, addUnitClause (invLit newLiteral) cnf)
                          ]
-      Nothing         -> [cnf]
+      Nothing         -> [(propagated, cnf)]
 
 data Result a = Solution a | NoSolution | Branches [a] deriving Show
 
-dpll' :: (Ord a) => CNF a -> Result (CNF a)
-dpll' cnf
-  | isConsistentSetOfLiterals cnf = Solution cnf
+type DPLLState a = (Set.Set (Lit a), CNF a)
+
+dpll' :: (Ord a) => DPLLState a -> Result (DPLLState a)
+dpll' (propagated, cnf)
+  | isConsistentSetOfLiterals cnf = Solution (propagated, cnf)
   | hasEmptyClauses           cnf = NoSolution
-  | otherwise                     = Branches $ makeBranches $ dpllStep cnf
+  | otherwise                     = Branches $ makeBranches $ dpllStep (propagated, cnf)
 
 treeSearch :: (a -> Result a) -> a -> Maybe a
 treeSearch step cnf = case step cnf of
@@ -54,8 +56,21 @@ treeSearch step cnf = case step cnf of
   NoSolution    -> Nothing
   Branches branches -> seqMaybe $ map (treeSearch step) branches
 
-dpll :: (Ord a) => CNF a -> Maybe (CNF a)
-dpll = treeSearch dpll'
+treeSearchN :: (a -> Result a) -> Int -> a -> Maybe a
+treeSearchN step n cnf
+  | n == 0    = Nothing
+  | otherwise = case step cnf of
+      Solution cnf' -> Just cnf'
+      NoSolution    -> Nothing
+      Branches branches -> seqMaybe $ map (treeSearchN step $ n - 1) branches
 
-dpllStep :: (Ord a) => CNF a -> CNF a
+fromDPLLState :: (Ord a) => DPLLState a -> CNF a
+fromDPLLState (propagated, cnf) = cnf <> fromUnitLiterals propagated
+
+dpll :: (Ord a) => CNF a -> Maybe (CNF a)
+dpll cnf = case treeSearch dpll' (Set.empty, cnf) of
+  Just (propagated, cnf') -> Just $ fromDPLLState (propagated, cnf')
+  Nothing                 -> Nothing
+
+dpllStep :: (Ord a) => (Set.Set (Lit a), CNF a) -> (Set.Set (Lit a), CNF a)
 dpllStep = eliminateAllPureLiterals . unitPropagateAll

@@ -15,8 +15,8 @@ unitPropagate lit clause
 unitPropagate' :: (Ord a) => Lit a -> CNF a -> CNF a
 unitPropagate' a (CNF clauses) = CNF $ mapMaybe (unitPropagate a) clauses
 
-allUnitLiteralsPropagated :: (Ord a) => CNF a -> Bool
-allUnitLiteralsPropagated = ((==) mempty) . allUnitLiterals
+allUnitLiteralsPropagated :: (Ord a) => (Set.Set (Lit a), CNF a) -> Bool
+allUnitLiteralsPropagated (_, cnf) = mempty == allUnitLiterals cnf
 
 propagateUnitLiterals :: (Ord a) => (Set.Set (Lit a), CNF a) -> (Set.Set (Lit a), CNF a)
 propagateUnitLiterals (propagated, cnf) = (propagated', cnf')
@@ -25,8 +25,5 @@ propagateUnitLiterals (propagated, cnf) = (propagated', cnf')
     propagated' = Set.insert nextLiteral propagated
     cnf'        = unitPropagate' nextLiteral cnf
 
-unitPropagateAll :: (Ord a) => CNF a -> CNF a
-unitPropagateAll cnf = reducedCnf <> fromUnitLiterals propagated
-  where
-    -- Propagate the unit literals through the CNF expression
-    (propagated, reducedCnf) = until (allUnitLiteralsPropagated . snd) propagateUnitLiterals (Set.empty, cnf)
+unitPropagateAll :: (Ord a) => (Set.Set (Lit a), CNF a) -> (Set.Set (Lit a), CNF a)
+unitPropagateAll = until allUnitLiteralsPropagated propagateUnitLiterals

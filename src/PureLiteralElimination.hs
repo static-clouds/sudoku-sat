@@ -22,5 +22,6 @@ allPureLiterals cnf = purePosLiterals <> pureNegLiterals
     posAtoms' = posAtoms $ allLiterals cnf
     negAtoms' = negAtoms $ allLiterals cnf
 
-eliminateAllPureLiterals :: (Ord a) => CNF a -> CNF a
-eliminateAllPureLiterals cnf = Set.fold eliminateLiteral cnf (allPureLiterals cnf)
+eliminateAllPureLiterals :: (Ord a) => (Set.Set (Lit a), CNF a) -> (Set.Set (Lit a), CNF a)
+eliminateAllPureLiterals (propagated, cnf) = (propagated <> pureLiterals, Set.fold eliminateLiteral cnf pureLiterals)
+  where pureLiterals = (allPureLiterals cnf)
