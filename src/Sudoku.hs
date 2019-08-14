@@ -1,6 +1,6 @@
 module Sudoku where
 
-import CNF(CNF(..), Lit(..), Polarity(..), makeUnitLiteral, clauseFromSet)
+import CNF(CNF(..), Lit(..), Polarity(..), makeUnitLiteral, clauseFromList)
 import GHC.Generics
 import Data.List (tails)
 import Data.List.Split (splitOn)
@@ -117,7 +117,7 @@ sudokuCnf gridSize = CNF $ Set.fromList clauses
     values = gridSpan gridSize
     params = [C { row = row, col = col, val = val } | row <- values, col <- values, val <- values]
     rules = [cellRule values, rowRule values, colRule values, boxRule gridSize]
-    clauses = map (clauseFromSet . Set.fromList) clauseLists
+    clauses = map clauseFromList clauseLists
     clauseLists = concat [makeXorRule $ rule param | rule <- rules, param <- params]
 
 easyData   = "7-6-9--8-X-----69--X98-5-2-7-X312-4---5X---153---X4---6-318X-6-8-9-31X--73-----X-4--2-8-7"
