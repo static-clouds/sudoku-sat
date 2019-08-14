@@ -10,7 +10,7 @@ import Sudoku (easyData, sudokuCnf, toBoard)
 main :: IO ()
 main = do
   let cnf = sudokuCnf <> toBoard easyData
-  let result = treeSearchN dpll' 2 (Set.empty, cnf)
+  let result = treeSearchN dpll' 6 (Set.empty, cnf)
   case result of
     Just _ -> putStrLn "solution"
     Nothing -> putStrLn "no solution"
