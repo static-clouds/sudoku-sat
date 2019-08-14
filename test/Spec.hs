@@ -17,9 +17,10 @@ instance Arbitrary TestAtom where
 main :: IO ()
 main = do
   quickCheck prop_dpllMakesCNFValid
-  quickCheck prop_dpllMakesCNFValidSimple
-  quickCheck prop_dpllMakesCNFValidComplex
+  quickCheck $ withMaxSuccess 1 prop_dpllMakesCNFValidSimple
+  quickCheck $ withMaxSuccess 1 prop_dpllMakesCNFValidComplex
   quickCheck prop_dpllShrinksInput
+  quickCheck $ withMaxSuccess 1 prop_isValidCnfForInvalid
 
 prop_dpllMakesCNFValid :: CNF TestAtom -> Bool
 prop_dpllMakesCNFValid cnf = case dpll cnf of
@@ -68,3 +69,9 @@ prop_dpllShrinksInput cnf = case dpll' (Set.empty, cnf) of
     isSmaller successor = moreUnitLiterals successor || fewerDisjunctions successor
     moreUnitLiterals successor = numUnitLiterals successor > numUnitLiterals cnf
     fewerDisjunctions successor = numDisjunctions successor < numDisjunctions cnf
+
+
+prop_isValidCnfForInvalid :: Bool
+prop_isValidCnfForInvalid = not $ isValidCNF $ cnf [ disj [ p AA ]
+                                                   , disj [ n AA ]
+                                                   ]

@@ -4,7 +4,7 @@ import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as Set
 
-import CNF(Clause(..), CNF(..), Lit(..), Polarity(..), allUnitLiterals, allDisjunctions, mapCnf)
+import CNF(Clause(..), CNF(..), Lit(..), Polarity(..), allUnitLiterals, allDisjunctions, isConsistent, mapCnf)
 
 type AtomMapping a = Map.Map a Bool
 
@@ -29,7 +29,7 @@ makeAtomMapping literals = Map.fromList pairs
     pairs = Set.toList $ Set.map (\(Lit p a) -> (a, truthValue p)) literals
 
 isValidCNF :: (Ord a) => CNF a -> Bool
-isValidCNF cnf = evaluateCnf $ mapCnf replaceAtoms cnfToSolve
+isValidCNF cnf = isConsistent literals && evaluateCnf (mapCnf replaceAtoms cnfToSolve)
   where
     replaceAtoms a = Map.findWithDefault False a atomMapping
     atomMapping = makeAtomMapping literals
