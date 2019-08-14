@@ -50,6 +50,12 @@ gridSpan n = [0..m]
 makeRule :: (a -> Bool) -> [a] -> [Lit a]
 makeRule cond atoms = map (posIf cond) atoms
 
+makeXorRule :: (Eq a) => [a] -> [[Lit a]]
+makeXorRule lits = oneMustBeTrue : onlyOneIsTrue
+  where
+    oneMustBeTrue = map (Lit Pos) lits
+    onlyOneIsTrue = [[Lit Neg a, Lit Neg b] | a <- lits, b <- lits, a /= b]
+
 matchesVal :: Int -> SudokuCellAtom -> Bool
 matchesVal val (C {val = val'}) = val' == val
 
