@@ -8,6 +8,7 @@ import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as Set
 import Generic.Random
 import GHC.Generics
+import Sudoku
 
 
 data TestAtom = AA | AB | AC | AD deriving (Eq, Generic, Ord, Show)
@@ -21,6 +22,10 @@ main = do
   quickCheck $ withMaxSuccess 1 prop_dpllMakesCNFValidComplex
   quickCheck prop_dpllShrinksInput
   quickCheck $ withMaxSuccess 1 prop_isValidCnfForInvalid
+  quickCheck $ withMaxSuccess 1 prop_easy3x3Board
+  quickCheck $ withMaxSuccess 1 prop_medium3x3Board
+  quickCheck $ withMaxSuccess 1 prop_hard3x3Board
+  quickCheck $ withMaxSuccess 1 prop_evil3x3Board
 
 prop_dpllMakesCNFValid :: CNF TestAtom -> Bool
 prop_dpllMakesCNFValid cnf = case dpll cnf of
@@ -75,3 +80,21 @@ prop_isValidCnfForInvalid :: Bool
 prop_isValidCnfForInvalid = not $ isValidCNF $ cnf [ disj [ p AA ]
                                                    , disj [ n AA ]
                                                    ]
+
+canSolve3x3Board :: String -> Bool
+canSolve3x3Board board = isValidCNF $ res <> baseCnf
+  where
+    baseCnf = sudokuCnf 3
+    res = fromJust $ dpll $ baseCnf <> toBoard easyData
+
+prop_easy3x3Board :: Bool
+prop_easy3x3Board = canSolve3x3Board easyData
+
+prop_medium3x3Board :: Bool
+prop_medium3x3Board = canSolve3x3Board mediumData
+
+prop_hard3x3Board :: Bool
+prop_hard3x3Board = canSolve3x3Board hardData
+
+prop_evil3x3Board :: Bool
+prop_evil3x3Board = canSolve3x3Board evilData
