@@ -1,12 +1,26 @@
 module Sudoku where
 
-import CNF(CNF(..), Lit(..), Polarity(..), makeUnitLiteral, clauseFromList)
+import CNF(CNF(..), Lit(..), Polarity(..), allUnitLiterals, hasPolarity, literalAtom, makeUnitLiteral, clauseFromList)
 import GHC.Generics
 import Data.List (tails)
 import Data.List.Split (splitOn)
 import Data.Maybe (fromJust, isJust)
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Test.QuickCheck
+
+
+
+showBoard :: Int -> CNF SudokuCellAtom -> String
+showBoard gridSize cnf = unlines $ map unwords grid
+  where
+    grid = [[showCell $ Map.lookup (i,j) gridValues | i <- gridSpan gridSize] | j <- gridSpan gridSize]
+    gridValues = Map.fromList $ map (\C { row = row, col = col, val = val} -> ((row, col), val)) atoms
+    atoms = map literalAtom $ filter (hasPolarity Pos) $ Set.toList $ allUnitLiterals cnf
+
+    showCell Nothing  = "-"
+    showCell (Just a) = show (a + 1)
+
 
 allPositions :: Int -> [(Int, Int)]
 allPositions n = [(r, c) | r <- gridSpan n, c <- gridSpan n]
