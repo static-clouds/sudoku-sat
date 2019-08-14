@@ -2,6 +2,7 @@ module Sudoku where
 
 import CNF(CNF(..), Lit(..), Polarity(..), makeUnitLiteral, clauseFromSet)
 import GHC.Generics
+import Data.List (tails)
 import Data.List.Split (splitOn)
 import Data.Maybe (fromJust, isJust)
 import qualified Data.Set as Set
@@ -50,11 +51,14 @@ gridSpan n = [0..m]
 makeRule :: (a -> Bool) -> [a] -> [Lit a]
 makeRule cond atoms = map (posIf cond) atoms
 
-makeXorRule :: (Eq a) => [a] -> [[Lit a]]
+pairs :: [a] -> [(a, a)]
+pairs l = [(x, y) | (x:ys) <- tails l, y <- ys]
+
+makeXorRule :: [a] -> [[Lit a]]
 makeXorRule lits = oneMustBeTrue : onlyOneIsTrue
   where
     oneMustBeTrue = map (Lit Pos) lits
-    onlyOneIsTrue = [[Lit Neg a, Lit Neg b] | a <- lits, b <- lits, a /= b]
+    onlyOneIsTrue = [[Lit Neg a, Lit Neg b] | (a, b) <- pairs lits]
 
 matchesVal :: Int -> SudokuCellAtom -> Bool
 matchesVal val (C {val = val'}) = val' == val
