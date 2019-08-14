@@ -60,8 +60,6 @@ makeXorRule lits = oneMustBeTrue : onlyOneIsTrue
     oneMustBeTrue = map (Lit Pos) lits
     onlyOneIsTrue = [[Lit Neg a, Lit Neg b] | (a, b) <- pairs lits]
 
-matchesVal :: Int -> SudokuCellAtom -> Bool
-matchesVal val (C {val = val'}) = val' == val
 
 setVal :: SudokuCellAtom -> Int -> SudokuCellAtom
 setVal cell val = cell { val = val }
@@ -78,14 +76,8 @@ setCol cell col = cell { col = col }
 rowValues :: [Int] -> SudokuCellAtom -> [SudokuCellAtom]
 rowValues values cell = map (setCol cell) values
 
-matchesCol :: Int -> SudokuCellAtom -> Bool
-matchesCol col (C { col = col' }) = col' == col
-
 rowRule :: [Int] -> SudokuCellAtom -> [[Lit SudokuCellAtom]]
 rowRule values cell@(C { col = col }) = makeXorRule $ rowValues values cell
-
-matchesRow :: Int -> SudokuCellAtom -> Bool
-matchesRow row (C { row = row' }) = row' == row
 
 setRow :: SudokuCellAtom -> Int -> SudokuCellAtom
 setRow cell row = cell { row = row }
@@ -115,9 +107,6 @@ setRowCol cell (row, col) = (flip setRow $ row) . (flip setCol $ col) $ cell
 
 boxValues :: [(Int, Int)] -> SudokuCellAtom -> [SudokuCellAtom]
 boxValues values cell = map (setRowCol cell) $ values
-
-matchesRowCol :: Int -> Int -> SudokuCellAtom -> Bool
-matchesRowCol row col cell@(C { row = row', col = col' } ) = row == row' && col == col'
 
 boxRule :: Int -> SudokuCellAtom -> [[Lit SudokuCellAtom]]
 boxRule gridSize cell = makeXorRule $ boxValues (box gridSize cell) cell
