@@ -16,12 +16,12 @@ toVal '-' = Nothing
 toVal s   = Just (read [s] :: Int)
 
 toMoves :: String -> [SudokuCellAtom]
-toMoves s = map (uncurry3 C) allValues
+toMoves s = [(C { row = row, col = col, val = fromJust val}) | (row, col) <- allPositions 9
+                                                             , let val' = board !! row !! col
+                                                             , let val = toVal val'
+                                                             , isJust val
+                                                             ]
   where
-    allValues = [(row, col, fromJust val) | (row, col) <- allPositions 9
-                                          , let val' = board !! row !! col
-                                          , let val = toVal val'
-                                          , isJust val]
     board     = splitOn "X" s
 
 toBoard :: String -> CNF SudokuCellAtom
@@ -87,9 +87,6 @@ matchesRowCol row col cell@(C { row = row', col = col' } ) = row == row' && col 
 
 boxRule :: SudokuCellAtom -> [Lit SudokuCellAtom]
 boxRule cell@(C { row = row, col = col }) = makeRule (matchesRowCol row col) $ boxValues cell
-
-uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
-uncurry3 f (a, b, c) = f a b c
 
 sudokuCnf :: CNF SudokuCellAtom
 sudokuCnf = CNF $ Set.fromList clauses
