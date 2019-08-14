@@ -67,8 +67,8 @@ setVal cell val = cell { val = val }
 cellValues :: [Int] -> SudokuCellAtom -> [SudokuCellAtom]
 cellValues values cell = map (setVal cell) values
 
-cellRule :: [Int] -> SudokuCellAtom -> [[Lit SudokuCellAtom]]
-cellRule values cell = makeXorRule $ cellValues values cell
+cellRule :: [Int] -> SudokuCellAtom -> [SudokuCellAtom]
+cellRule values cell = cellValues values cell
 
 setCol :: SudokuCellAtom -> Int -> SudokuCellAtom
 setCol cell col = cell { col = col }
@@ -76,8 +76,8 @@ setCol cell col = cell { col = col }
 rowValues :: [Int] -> SudokuCellAtom -> [SudokuCellAtom]
 rowValues values cell = map (setCol cell) values
 
-rowRule :: [Int] -> SudokuCellAtom -> [[Lit SudokuCellAtom]]
-rowRule values cell@(C { col = col }) = makeXorRule $ rowValues values cell
+rowRule :: [Int] -> SudokuCellAtom -> [SudokuCellAtom]
+rowRule values cell = rowValues values cell
 
 setRow :: SudokuCellAtom -> Int -> SudokuCellAtom
 setRow cell row = cell { row = row }
@@ -85,8 +85,8 @@ setRow cell row = cell { row = row }
 colValues :: [Int] -> SudokuCellAtom -> [SudokuCellAtom]
 colValues values cell = map (setRow cell) values
 
-colRule :: [Int] -> SudokuCellAtom -> [[Lit SudokuCellAtom]]
-colRule values cell@(C { row = row }) = makeXorRule $ colValues values cell
+colRule :: [Int] -> SudokuCellAtom -> [SudokuCellAtom]
+colRule values cell = colValues values cell
 
 box' :: Int -> Int -> Int -> [(Int, Int)]
 box' boxSize r_ c_ = [(r, c) | r <- [rowStart..rowEnd], c <- [colStart..colEnd]]
@@ -106,10 +106,10 @@ setRowCol :: SudokuCellAtom -> (Int, Int) -> SudokuCellAtom
 setRowCol cell (row, col) = (flip setRow $ row) . (flip setCol $ col) $ cell
 
 boxValues :: [(Int, Int)] -> SudokuCellAtom -> [SudokuCellAtom]
-boxValues values cell = map (setRowCol cell) $ values
+boxValues values cell = map (setRowCol cell) values
 
-boxRule :: Int -> SudokuCellAtom -> [[Lit SudokuCellAtom]]
-boxRule gridSize cell = makeXorRule $ boxValues (box gridSize cell) cell
+boxRule :: Int -> SudokuCellAtom -> [SudokuCellAtom]
+boxRule gridSize cell = boxValues (box gridSize cell) cell
 
 sudokuCnf :: Int -> CNF SudokuCellAtom
 sudokuCnf gridSize = CNF $ Set.fromList clauses
@@ -118,7 +118,7 @@ sudokuCnf gridSize = CNF $ Set.fromList clauses
     params = [C { row = row, col = col, val = val } | row <- values, col <- values, val <- values]
     rules = [cellRule values, rowRule values, colRule values, boxRule gridSize]
     clauses = map (clauseFromSet . Set.fromList) clauseLists
-    clauseLists = concat [rule param | rule <- rules, param <- params]
+    clauseLists = concat [makeXorRule $ rule param | rule <- rules, param <- params]
 
 easyData   = "7-6-9--8-X-----69--X98-5-2-7-X312-4---5X---153---X4---6-318X-6-8-9-31X--73-----X-4--2-8-7"
 mediumData = "--6-3--5-X------2-8X-8--95--4X934---527X----4----X815---649X2--81--9-X4-1------X-6--7-3--"
