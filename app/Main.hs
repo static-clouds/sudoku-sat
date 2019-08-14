@@ -5,12 +5,12 @@ module Main where
 import CNF(CNF(..))
 import qualified Data.Set as Set
 import DPLL
-import Sudoku (easyData, sudokuCnf, toBoard)
+import Sudoku (sudokuCnf, toBoard, smallData)
 
 main :: IO ()
 main = do
-  let cnf = sudokuCnf <> toBoard easyData
-  let result = treeSearchN dpll' 6 (Set.empty, cnf)
+  let cnf = sudokuCnf 2 <> toBoard smallData
+  let result = dpll cnf
   case result of
     Just _ -> putStrLn "solution"
     Nothing -> putStrLn "no solution"
