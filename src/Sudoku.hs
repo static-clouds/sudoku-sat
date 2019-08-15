@@ -10,7 +10,6 @@ import qualified Data.Set as Set
 import Test.QuickCheck
 
 
-
 showBoard :: Int -> CNF SudokuCellAtom -> String
 showBoard gridSize cnf = unlines $ map unwords grid
   where
@@ -61,9 +60,6 @@ posIf condition atom = Lit polarity atom
 gridSpan :: Int -> [Int]
 gridSpan n = [0..m]
   where m = (n * n) - 1
-
-makeRule :: (a -> Bool) -> [a] -> [Lit a]
-makeRule cond atoms = map (posIf cond) atoms
 
 pairs :: [a] -> [(a, a)]
 pairs l = [(x, y) | (x:ys) <- tails l, y <- ys]
