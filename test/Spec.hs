@@ -9,7 +9,7 @@ import qualified Data.Set as Set
 import Generic.Random
 import GHC.Generics
 import Sudoku
-
+import XOrSpec
 
 data TestAtom = AA | AB | AC | AD deriving (Eq, Generic, Ord, Show)
 instance Arbitrary TestAtom where
@@ -26,6 +26,10 @@ main = do
   quickCheck $ withMaxSuccess 1 prop_medium3x3Board
   quickCheck $ withMaxSuccess 1 prop_hard3x3Board
   quickCheck $ withMaxSuccess 1 prop_evil3x3Board
+  quickCheck prop_convertXOrProducesEmptyCnf
+  quickCheck prop_convertXOrInvalidIfNoLitsTrue
+  quickCheck prop_convertXOrValidIfOneLitIsTrue
+  quickCheck prop_convertXOrInvalidIfMoreThanOneLitIsTrue
 
 prop_dpllMakesCNFValid :: CNF TestAtom -> Bool
 prop_dpllMakesCNFValid cnf = case dpll cnf of
