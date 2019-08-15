@@ -10,14 +10,11 @@ data XOrForm a = XOrForm [XOrClause a] deriving Show
 pairs :: [a] -> [(a, a)]
 pairs l = [(x, y) | (x:ys) <- tails l, y <- ys]
 
-makeXorRule :: [Lit a] -> [[Lit a]]
-makeXorRule lits = oneMustBeTrue : onlyOneIsTrue
+toCNFClauses :: (Ord a) => XOrClause a -> [Clause a]
+toCNFClauses (XOr lits) = map clauseFromList $ oneMustBeTrue : onlyOneIsTrue
   where
     oneMustBeTrue = lits
     onlyOneIsTrue = [[invLit lit1, invLit lit2] | (lit1, lit2) <- pairs lits]
-
-toCNFClauses :: (Ord a) => XOrClause a -> [Clause a]
-toCNFClauses (XOr lits) = map clauseFromList $ makeXorRule lits
 
 toCNF :: (Ord a) => XOrForm a -> CNF a
 toCNF (XOrForm xor) = CNF $ Set.fromList $ concatMap toCNFClauses xor
