@@ -8,6 +8,7 @@ import Data.Maybe (fromJust, isJust)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Test.QuickCheck
+import XOr
 
 
 showBoard :: Int -> CNF SudokuCellAtom -> String
@@ -51,25 +52,9 @@ data SudokuCellAtom = C { row :: Int, col :: Int, val :: Int } deriving (Eq, Ord
 instance Show SudokuCellAtom where
   show C { row = row, col = col, val = val } = "C" ++ show (row, col, val)
 
-posIf :: (a -> Bool) -> a -> Lit a
-posIf condition atom = Lit polarity atom
-  where polarity
-          | condition atom = Pos
-          | otherwise      = Neg
-
 gridSpan :: Int -> [Int]
 gridSpan n = [0..m]
   where m = (n * n) - 1
-
-pairs :: [a] -> [(a, a)]
-pairs l = [(x, y) | (x:ys) <- tails l, y <- ys]
-
-makeXorRule :: [a] -> [[Lit a]]
-makeXorRule lits = oneMustBeTrue : onlyOneIsTrue
-  where
-    oneMustBeTrue = map (Lit Pos) lits
-    onlyOneIsTrue = [[Lit Neg a, Lit Neg b] | (a, b) <- pairs lits]
-
 
 setVal :: SudokuCellAtom -> Int -> SudokuCellAtom
 setVal cell val = cell { val = val }
@@ -121,14 +106,15 @@ boxValues values cell = map (setRowCol cell) values
 boxRule :: Int -> SudokuCellAtom -> [SudokuCellAtom]
 boxRule gridSize cell = boxValues (box gridSize cell) cell
 
-sudokuCnf :: Int -> CNF SudokuCellAtom
-sudokuCnf gridSize = CNF $ Set.fromList clauses
+sudokuXOrForm :: Int -> XOrForm SudokuCellAtom
+sudokuXOrForm gridSize = XOrForm $ [XOr $ map (Lit Pos) $ rule param | rule <- rules, param <- params]
   where
     values = gridSpan gridSize
     params = [C { row = row, col = col, val = val } | row <- values, col <- values, val <- values]
     rules = [cellRule values, rowRule values, colRule values, boxRule gridSize]
-    clauses = map clauseFromList clauseLists
-    clauseLists = concat [makeXorRule $ rule param | rule <- rules, param <- params]
+
+sudokuCnf :: Int -> CNF SudokuCellAtom
+sudokuCnf = toCNF . sudokuXOrForm
 
 easyData   = "7-6-9--8-X-----69--X98-5-2-7-X312-4---5X---153---X4---6-318X-6-8-9-31X--73-----X-4--2-8-7"
 mediumData = "--6-3--5-X------2-8X-8--95--4X934---527X----4----X815---649X2--81--9-X4-1------X-6--7-3--"
