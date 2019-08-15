@@ -4,7 +4,7 @@ import CNF(Lit, CNF(..), Clause, clauseFromList, invLit)
 import Data.List (tails)
 import qualified Data.Set as Set
 
-data XOrClause a = XOrUnit (Lit a) | XOr [Lit a] deriving Show
+data XOrClause a = XOr [Lit a] deriving Show
 data XOrForm a = XOrForm [XOrClause a] deriving Show
 
 pairs :: [a] -> [(a, a)]
@@ -17,8 +17,7 @@ makeXorRule lits = oneMustBeTrue : onlyOneIsTrue
     onlyOneIsTrue = [[invLit lit1, invLit lit2] | (lit1, lit2) <- pairs lits]
 
 toCNFClauses :: (Ord a) => XOrClause a -> [Clause a]
-toCNFClauses (XOrUnit lit ) = [clauseFromList [lit]]
-toCNFClauses (XOr     lits) = map clauseFromList $ makeXorRule lits
+toCNFClauses (XOr lits) = map clauseFromList $ makeXorRule lits
 
 toCNF :: (Ord a) => XOrForm a -> CNF a
 toCNF (XOrForm xor) = CNF $ Set.fromList $ concatMap toCNFClauses xor
